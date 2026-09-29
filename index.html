@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>文勝 · 翊鈴 — 相愛相守 22 年</title>
+<meta name="description" content="一本給吳文勝與劉翊鈴的紀念書。2004.09.09 — 2026.09.09。">
+<meta name="theme-color" content="#FAFAFA">
+<meta property="og:type" content="website">
+<meta property="og:title" content="文勝 · 翊鈴 — 相愛相守 22 年">
+<meta property="og:description" content="一本給吳文勝與劉翊鈴的紀念書。2004.09.09 — 2026.09.09。">
+<meta property="og:url" content="https://wensheng-yiling.com/">
+<meta property="og:image" content="https://wensheng-yiling.com/assets/og.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23C9202A'/%3E%3Ctext x='32' y='42' font-family='Georgia,serif' font-size='30' text-anchor='middle' fill='%23FAFAFA'%3E22%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Ma+Shan+Zheng&family=Noto+Sans+TC:wght@300;400&family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- ═══════════ 全站唯一的兩個 UI ═══════════ -->
+<div id="progress" aria-hidden="true"><i></i><b></b></div>
+<button id="sound" type="button" aria-pressed="false" aria-label="開啟聲音">
+  <span class="eq" aria-hidden="true"><i></i><i></i><i></i></span><span class="lbl">SOUND</span>
+</button>
+
+<!-- 捲動軸(只負責製造高度) -->
+<div id="scroller" aria-hidden="true"></div>
+
+<!-- ═══════════ 舞台:所有幕都在這裡,固定滿版 ═══════════ -->
+<main id="stage">
+
+  <canvas id="gl" aria-hidden="true"></canvas>
+
+  <!-- ① 序 · 22 + 音樂盒 -->
+  <div class="act" id="prologue">
+    <div class="w w-anniv" id="w-anniv"><div class="anniv" aria-hidden="true"><span class="num">22</span></div></div>
+
+    <div class="w" id="w-top"><div class="hero-top">
+      <span class="kicker" id="hero-kicker">22nd Wedding Anniversary</span>
+      <span class="dedication" id="hero-dedication">給 吳文勝 與 劉翊鈴</span>
+    </div></div>
+
+    <div class="w" id="w-box"><div class="music-box" id="music-box">
+      <div class="halo"></div>
+      <div class="halo halo-2"></div>
+      <div class="base">
+        <div class="base-shadow"></div>
+        <div class="base-top"></div>
+        <div class="base-rim"></div>
+        <div class="base-key" aria-hidden="true">♪</div>
+      </div>
+      <div class="figure-wrap">
+        <div class="figure-shadow"></div>
+        <img class="figure" src="assets/couple-cutout.png" alt="吳文勝與劉翊鈴的婚紗人偶" draggable="false">
+      </div>
+      <div class="snow-box" id="snow-box" aria-hidden="true"></div>
+      <div class="dome-shine" aria-hidden="true"></div>
+      <button class="wax-seal" id="wax-seal" type="button" aria-label="打開這本書"><span>♥</span></button>
+    </div></div>
+
+    <div class="w" id="w-dates"><span class="dates" id="hero-dates">2004.09.09 — 2026.09.09</span></div>
+    <div class="scroll-cue" aria-hidden="true"><i></i><span>SCROLL</span></div>
+  </div>
+
+  <!-- ② 門廊 · 玻璃碎成花瓣 -->
+  <div class="act" id="threshold">
+    <div class="frame" id="frame">
+      <div class="mat"></div>
+      <div class="shards" id="shards"></div>
+      <div class="glass"></div>
+      <div class="frame-caption">2004 · 09 · 09</div>
+    </div>
+    <p class="threshold-line" id="threshold-line"></p>
+  </div>
+
+  <!-- ③ 書 · 20 張婚紗照 -->
+  <div class="act" id="book-act">
+    <div class="book-stage" id="book-stage">
+      <div class="book" id="book">
+        <div class="board board-l"></div>
+        <div class="board board-r"></div>
+        <div class="spine-lines" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+        <button class="ribbon" id="ribbon" type="button" aria-label="回到第一章"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 客廳 · 陶瓷人偶 -->
+  <div class="act" id="room">
+    <div class="room-fallback" id="room-fallback" hidden>
+      <img src="assets/couple-cutout.png" alt="">
+    </div>
+    <button class="hands-btn" id="hands-btn" type="button" aria-pressed="false">
+      <span class="seal">♥</span><span class="txt">牽手</span>
+    </button>
+  </div>
+
+  <!-- ⑤ 心 · 定制器 -->
+  <div class="act" id="heart">
+    <div class="hit" id="heart-hit"></div>
+    <div class="heart-fallback" id="heart-fallback" hidden>
+      <svg viewBox="-60 -60 120 120" aria-hidden="true"><path id="fb-heart" d="M0 42 C -10 30 -52 12 -52 -18 C -52 -36 -38 -48 -24 -48 C -12 -48 -4 -42 0 -34 C 4 -42 12 -48 24 -48 C 38 -48 52 -36 52 -18 C 52 12 10 30 0 42 Z"/></svg>
+      <span id="fb-engrave"></span>
+    </div>
+    <div class="heart-panel" id="heart-panel">
+      <div class="row" id="opt-color" data-key="c">
+        <span class="lab">色</span>
+        <button data-v="rose" style="--c:#C9202A" aria-label="胭脂紅"></button>
+        <button data-v="ivory" style="--c:#F2F2F2" aria-label="象牙白"></button>
+        <button data-v="gold" style="--c:#C9A227" aria-label="香檳金"></button>
+        <button data-v="mist" style="--c:#B9BEC2" aria-label="霧灰"></button>
+      </div>
+      <div class="row" id="opt-material" data-key="m">
+        <span class="lab">質</span>
+        <button data-v="ceramic">陶瓷</button>
+        <button data-v="velvet">絲絨</button>
+        <button data-v="metal">金屬</button>
+        <button data-v="glass">玻璃</button>
+      </div>
+      <div class="row" id="opt-halo" data-key="h">
+        <span class="lab">環</span>
+        <button data-v="none">無</button>
+        <button data-v="ring">金環</button>
+        <button data-v="glow">光暈</button>
+      </div>
+      <div class="row engrave">
+        <span class="lab">刻</span>
+        <input id="engrave" type="text" maxlength="10" placeholder="十字以內" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="row actions">
+        <button id="share-btn" type="button">複製連結</button>
+        <button id="card-btn" type="button">下載卡片</button>
+        <span class="toast" id="toast"></span>
+      </div>
+      <p class="received" id="received" hidden></p>
+    </div>
+  </div>
+
+  <!-- ⑥ 春天 · 22 朵花 -->
+  <div class="act" id="spring">
+    <div class="garden" id="garden"></div>
+    <p class="spring-line" id="spring-line"></p>
+  </div>
+
+  <!-- ⑦ 迴響 -->
+  <div class="act" id="echo">
+    <div class="anniv ghost" aria-hidden="true"><span class="num">22</span></div>
+    <p class="echo-1" id="echo-1"></p>
+    <p class="echo-2" id="echo-2"></p>
+  </div>
+
+  <div id="fog" aria-hidden="true"></div>
+</main>
+
+<script src="js/content.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/book.js"></script>
+<script src="js/threshold.js"></script>
+<script src="js/flowers.js"></script>
+<script src="js/scene3d.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
