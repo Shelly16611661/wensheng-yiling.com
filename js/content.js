@@ -82,11 +82,5 @@ window.CONTENT = {
     { src: 'assets/wedding-20.jpg', caption: '' },
   ],
 
-  /* 幕④ 陶瓷人偶的顏色(呼應婚紗照的水藍) */
-  figurines: {
-    skin: '#F3E7DD',
-    hair: '#2A2622',
-    father: { coat: '#9FB9D2', trousers: '#F4F1EC', shirt: '#FBFAF7', tie: '#C9202A' },
-    mother: { dress: '#DDE8F1', gloves: '#FBFAF7', ribbon: '#C9202A' },
-  },
+  /* 幕④ 的兩層公仔位置由 tools/split-figures.py 產生在 js/figures.js */
 };

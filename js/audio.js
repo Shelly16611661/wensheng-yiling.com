@@ -88,6 +88,12 @@
     tone({ freq: f, dur: 1.5, gain: 0.07, attack: 0.008 });
     tone({ freq: f * 2, dur: 0.9, gain: 0.018, attack: 0.008 });
   };
+  /* 親吻:短短的「啾」= 一小口帶通噪音 + 往下滑的正弦,然後一顆小鈴 */
+  A.kiss = () => {
+    burst({ dur: 0.09, gain: 0.07, filter: { type: 'bandpass', freq: 2600, q: 1.2 }, curve: 1.2 });
+    tone({ freq: 1040, glide: 520, dur: 0.16, gain: 0.07, attack: 0.005 });
+    tone({ freq: 1567.98, type: 'triangle', dur: 1.4, gain: 0.035, attack: 0.01, when: 0.18 });
+  };
   A.chord = () => [261.63, 329.63, 392.0, 523.25].forEach((f, i) => tone({ freq: f, dur: 3, gain: 0.05, attack: 0.02, when: i * 0.04 }));
 
   A.piano = (freq = 130.81, dur = 3.5, gain = 0.1) => {

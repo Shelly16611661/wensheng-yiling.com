@@ -96,23 +96,26 @@ window.Scene3D = (function () {
     return t;
   }
 
-  /* ── 幕④:客廳 ─────────────────────────── */
+  /* ── 幕④:客廳 ───────────────────────────
+     兩層「照片浮雕」:她 / 他 各是一張去背照片貼在細分平面上,
+     用距離變換高度圖做位移(displacement)+ 法線圖打光 → 有厚度的陶瓷感,
+     但顏色 100% 來自照片(emissive),所以和上傳的公仔一模一樣。 */
   function buildRoom(THREE) {
-    const C = window.CONTENT, F = C.figurines;
+    const C = window.CONTENT, FG = window.FIGURES;
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0xFAFAFA, 0.06);
     scene.environment = S.env;
     const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 60);
     camera.position.set(0, 1.5, 7.5);
 
-    const key = new THREE.DirectionalLight(0xFFFFFF, 2.4); key.position.set(3.5, 6, 4.5);
+    const key = new THREE.DirectionalLight(0xFFFFFF, 1.6); key.position.set(3.5, 6, 4.5);
     key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.shadow.radius = 6;
     key.shadow.camera.near = 1; key.shadow.camera.far = 20;
     key.shadow.camera.left = key.shadow.camera.bottom = -3; key.shadow.camera.right = key.shadow.camera.top = 3;
-    key.shadow.bias = -0.0005;
+    key.shadow.bias = -0.0006;
     scene.add(key);
-    const fill = new THREE.DirectionalLight(0xDCE6F0, 0.9); fill.position.set(-5, 2.5, 2); scene.add(fill);
-    scene.add(new THREE.HemisphereLight(0xFFFFFF, 0xE0E0E0, 0.55));
+    const fill = new THREE.DirectionalLight(0xDCE6F0, 0.7); fill.position.set(-5, 2.5, 2); scene.add(fill);
+    scene.add(new THREE.HemisphereLight(0xFFFFFF, 0xE0E0E0, 0.5));
 
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ opacity: 0.16 }));
     ground.rotation.x = -Math.PI / 2; ground.position.y = -0.14; ground.receiveShadow = true; scene.add(ground);
@@ -129,133 +132,62 @@ window.Scene3D = (function () {
       new THREE.MeshBasicMaterial({ map: textTexture(THREE, `${C.father.name.slice(1)} · ${C.mother.name.slice(1)} · ${C.weddingText}`, { w: 1200, h: 180, font: '500 92px "Noto Serif TC","Songti TC",serif', color: '#4A3609', spacing: 8 }), transparent: true }));
     plateText.position.set(0, -0.045, 1.226); plateText.rotation.x = -0.18; scene.add(plateText);
 
-    const father = makeFather(THREE, F); father.group.position.x = -0.46; father.group.rotation.y = 0.2; scene.add(father.group);
-    const mother = makeMother(THREE, F); mother.group.position.x = 0.46; mother.group.rotation.y = -0.2; scene.add(mother.group);
+    // 兩層照片浮雕
+    const FIG_H = 1.62;                         // 整張合照在世界裡的高度
+    const px = FIG_H / FG.image.h;              // 每像素 = 幾個世界單位
+    const mkFigure = (key, z) => {
+      const m = FG[key];
+      const w = m.w * px, h = m.h * px;
+      const segX = Math.min(160, Math.max(32, Math.round(m.w / 6))), segY = Math.min(240, Math.max(48, Math.round(m.h / 6)));
+      const geo = new THREE.PlaneGeometry(w, h, segX, segY);
+      const loader = new THREE.TextureLoader();
+      const map = loader.load(m.src); map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 8;
+      const disp = loader.load(m.height);
+      const nrm = loader.load(m.normal);
+      const depth = FIG_H * 0.075;
+      const mat = new THREE.MeshPhysicalMaterial({
+        color: 0x000000,                        // 不吃漫反射光 → 顏色完全等於照片
+        emissive: 0xFFFFFF, emissiveMap: map, emissiveIntensity: 1.0,
+        map,                                    // 只為了 alpha
+        displacementMap: disp, displacementScale: depth, displacementBias: 0,
+        normalMap: nrm, normalScale: new THREE.Vector2(0.7, 0.7),
+        roughness: 0.34, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0.22, envMapIntensity: 0.35,
+        alphaTest: 0.08, alphaToCoverage: true, transparent: false, side: THREE.FrontSide, fog: true,
+      });
+      mat.toneMapped = false;
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.castShadow = true;
+      mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map, alphaTest: 0.5, displacementMap: disp, displacementScale: depth });
+      // 群組原點 = 這個人的腳底(旋轉/傾身的軸心)
+      const feetX = (m.x + m.pivot - FG.image.w / 2) * px;
+      const cx = (m.x + m.w / 2 - FG.image.w / 2) * px, cy = (FG.image.h - (m.y + m.h / 2)) * px;
+      const group = new THREE.Group(); group.position.set(feetX, 0, z);
+      mesh.position.set(cx - feetX, cy, 0);
+      group.add(mesh);
+      const faceY = (FG.image.h - (m.y + m.h * 0.13)) * px;   // 臉大約在這一層上方 13% 處
+      return { group, mesh, mat, feetX, faceY, baseZ: z, w, h };
+    };
+    const frontKey = FG.front === 'him' ? 'him' : 'her';
+    const her = mkFigure('her', frontKey === 'her' ? 0.03 : -0.03);
+    const him = mkFigure('him', frontKey === 'him' ? 0.03 : -0.03);
+    her.mesh.renderOrder = frontKey === 'her' ? 2 : 1; him.mesh.renderOrder = frontKey === 'him' ? 2 : 1;
+    scene.add(her.group); scene.add(him.group);
 
-    // 牽手時浮出的小心
+    // 牽手時浮出的小心 + 親吻時冒出的小心們
     const heartGeo = makeHeartGeometry(THREE, 0.12, 0.05);
-    const smallHeart = new THREE.Mesh(heartGeo, new THREE.MeshPhysicalMaterial({ color: 0xC9202A, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.1, envMapIntensity: 1 }));
-    smallHeart.position.set(0, 1.05, 0.3); smallHeart.scale.setScalar(0.001); smallHeart.castShadow = true; scene.add(smallHeart);
-
-    return { scene, camera, father, mother, smallHeart, hands: false, t: 0, heartK: 0 };
-  }
-
-  function makeEyes(THREE, headR) {
-    const g = new THREE.Group();
-    const m = new THREE.MeshStandardMaterial({ color: 0x2A2622, roughness: 0.4 });
-    [-1, 1].forEach((s) => {
-      const e = new THREE.Mesh(new THREE.SphereGeometry(0.012, 12, 12), m);
-      e.position.set(s * headR * 0.36, headR * 0.05, headR * 0.92); g.add(e);
-    });
-    const blush = new THREE.MeshStandardMaterial({ color: 0xE8B8B0, roughness: 0.9, transparent: true, opacity: 0.5 });
-    [-1, 1].forEach((s) => {
-      const b = new THREE.Mesh(new THREE.SphereGeometry(0.022, 12, 12), blush);
-      b.scale.set(1, 0.7, 0.3); b.position.set(s * headR * 0.6, -headR * 0.18, headR * 0.82); g.add(b);
-    });
-    const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.022, 0.004, 8, 24, Math.PI), new THREE.MeshStandardMaterial({ color: 0xB4544E, roughness: 0.6 }));
-    mouth.rotation.z = Math.PI; mouth.position.set(0, -headR * 0.4, headR * 0.94); g.add(mouth);
-    return g;
-  }
-
-  function makeArm(THREE, { len, r, skinHex, sleeveHex, gloveHex, sleeveLen = 0 }) {
-    const pivot = new THREE.Group();
-    const skin = porcelain(THREE, skinHex);
-    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(r, len - r * 2, 6, 16), skin);
-    arm.position.y = -len / 2; arm.castShadow = true; pivot.add(arm);
-    if (sleeveLen > 0) {
-      const sl = new THREE.Mesh(new THREE.CapsuleGeometry(r * 1.25, sleeveLen, 6, 16), porcelain(THREE, sleeveHex));
-      sl.position.y = -sleeveLen / 2 - r * 0.6; sl.castShadow = true; pivot.add(sl);
+    const heartMat = new THREE.MeshPhysicalMaterial({ color: 0xC9202A, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.1, envMapIntensity: 1 });
+    const smallHeart = new THREE.Mesh(heartGeo, heartMat);
+    smallHeart.position.set(0, 0.9, 0.3); smallHeart.scale.setScalar(0.001); smallHeart.castShadow = true; scene.add(smallHeart);
+    const puffs = [];
+    for (let i = 0; i < 5; i++) {
+      const p = new THREE.Mesh(heartGeo, new THREE.MeshPhysicalMaterial({ color: i % 2 ? 0xE8A0A6 : 0xC9202A, roughness: 0.3, clearcoat: 1, transparent: true, opacity: 0 }));
+      p.scale.setScalar(0.001); p.visible = false; scene.add(p); puffs.push({ mesh: p, t: 99, vx: 0, vy: 0, vz: 0, spin: 0 });
     }
-    const hand = new THREE.Mesh(new THREE.SphereGeometry(r * 1.15, 16, 16), porcelain(THREE, gloveHex || skinHex));
-    hand.scale.set(1, 1.25, 0.7); hand.position.y = -len; hand.castShadow = true; pivot.add(hand);
-    return pivot;
+    const faceMid = new THREE.Vector3((her.feetX + him.feetX) / 2, (her.faceY + him.faceY) / 2, 0.2);
+
+    return { scene, camera, her, him, front: frontKey, smallHeart, puffs, faceMid, hands: false, t: 0, heartK: 0, kissT: -1, kissK: 0, burstDone: false };
   }
 
-  function makeFather(THREE, F) {
-    const P = F.father, group = new THREE.Group();
-    const trousers = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.145, 0.66, 24), porcelain(THREE, P.trousers, { roughness: 0.45, clearcoat: 0.4 }));
-    trousers.position.y = 0.33; trousers.castShadow = true; group.add(trousers);
-    [-1, 1].forEach((s) => {
-      const shoe = new THREE.Mesh(new THREE.SphereGeometry(0.075, 16, 12), porcelain(THREE, 0x9FB9D2));
-      shoe.scale.set(0.8, 0.45, 1.5); shoe.position.set(s * 0.085, 0.03, 0.06); shoe.castShadow = true; group.add(shoe);
-    });
-    const chest = new THREE.Group(); chest.position.y = 0.64; group.add(chest);
-    const coat = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.235, 0.6, 28), porcelain(THREE, P.coat));
-    coat.position.y = 0.3; coat.castShadow = true; chest.add(coat);
-    const tails = new THREE.Mesh(new THREE.CylinderGeometry(0.235, 0.2, 0.34, 28, 1, true, Math.PI * 0.62, Math.PI * 0.76), porcelain(THREE, P.coat, { side: THREE.DoubleSide }));
-    tails.position.y = -0.14; tails.castShadow = true; chest.add(tails);
-    const shirt = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.36, 0.03), porcelain(THREE, P.shirt));
-    shirt.position.set(0, 0.36, 0.205); chest.add(shirt);
-    const lapelM = porcelain(THREE, P.coat, { roughness: 0.25 });
-    [-1, 1].forEach((s) => {
-      const lapel = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.3, 0.02), lapelM);
-      lapel.position.set(s * 0.085, 0.4, 0.215); lapel.rotation.z = s * 0.22; chest.add(lapel);
-      const sh = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 16), porcelain(THREE, P.coat));
-      sh.position.set(s * 0.21, 0.56, 0); sh.scale.set(1, 0.8, 1); sh.castShadow = true; chest.add(sh);
-    });
-    const tieM = new THREE.MeshPhysicalMaterial({ color: P.tie, roughness: 0.35, clearcoat: 0.8 });
-    [-1, 1].forEach((s) => { const w = new THREE.Mesh(new THREE.SphereGeometry(0.03, 12, 12), tieM); w.scale.set(1.3, 0.8, 0.5); w.position.set(s * 0.032, 0.575, 0.215); chest.add(w); });
-    const knot = new THREE.Mesh(new THREE.SphereGeometry(0.014, 10, 10), tieM); knot.position.set(0, 0.575, 0.225); chest.add(knot);
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.1, 16), porcelain(THREE, F.skin)); neck.position.y = 0.63; chest.add(neck);
-
-    const head = new THREE.Group(); head.position.y = 0.66; chest.add(head);
-    const hr = 0.175;
-    const face = new THREE.Mesh(new THREE.SphereGeometry(hr, 32, 24), porcelain(THREE, F.skin)); face.position.y = hr; face.castShadow = true; head.add(face);
-    const hair = new THREE.Mesh(new THREE.SphereGeometry(hr * 1.05, 32, 20, 0, Math.PI * 2, 0, Math.PI * 0.56), porcelain(THREE, F.hair, { roughness: 0.4 }));
-    hair.position.set(0, hr * 1.02, -hr * 0.1); hair.rotation.x = -0.25; hair.castShadow = true; head.add(hair);
-    const eyes = makeEyes(THREE, hr); eyes.position.y = hr; head.add(eyes);
-    [-1, 1].forEach((s) => { const ear = new THREE.Mesh(new THREE.SphereGeometry(0.03, 12, 12), porcelain(THREE, F.skin)); ear.scale.set(0.5, 1, 0.8); ear.position.set(s * hr * 0.98, hr * 0.95, 0); head.add(ear); });
-
-    const armOuter = makeArm(THREE, { len: 0.52, r: 0.05, skinHex: F.skin, sleeveHex: P.coat, gloveHex: F.skin, sleeveLen: 0.34 });
-    armOuter.position.set(-0.24, 0.55, 0); armOuter.rotation.z = -0.14; chest.add(armOuter);
-    const armInner = makeArm(THREE, { len: 0.52, r: 0.05, skinHex: F.skin, sleeveHex: P.coat, gloveHex: F.skin, sleeveLen: 0.34 });
-    armInner.position.set(0.24, 0.55, 0); armInner.rotation.z = 0.14; chest.add(armInner);
-
-    return { group, chest, head, armInner, armOuter, rest: { z: 0.14, x: 0 }, hold: { z: 0.72, x: -0.28 } };
-  }
-
-  function makeMother(THREE, F) {
-    const P = F.mother, group = new THREE.Group();
-    const pts = [[0, 0], [0.44, 0], [0.43, 0.04], [0.36, 0.22], [0.29, 0.44], [0.22, 0.64], [0.15, 0.82], [0.125, 0.9], [0.14, 1.0], [0.16, 1.1], [0.15, 1.17], [0.09, 1.2], [0, 1.2]]
-      .map((p) => new THREE.Vector2(p[0], p[1]));
-    const dress = new THREE.Mesh(new THREE.LatheGeometry(pts, 64), porcelain(THREE, P.dress, { roughness: 0.34 }));
-    dress.castShadow = true; group.add(dress);
-    // 三層荷葉邊
-    [[0.42, 0.06], [0.34, 0.27], [0.27, 0.48]].forEach(([r, y], i) => {
-      const tier = new THREE.Mesh(new THREE.ConeGeometry(r + 0.03, 0.2, 64, 1, true), porcelain(THREE, i % 2 ? P.gloves : P.dress, { side: THREE.DoubleSide, roughness: 0.4 }));
-      tier.position.y = y + 0.1; tier.castShadow = true; group.add(tier);
-    });
-    const ribbon = new THREE.Mesh(new THREE.TorusGeometry(0.128, 0.013, 10, 48), new THREE.MeshPhysicalMaterial({ color: P.ribbon, roughness: 0.35, clearcoat: 0.8 }));
-    ribbon.rotation.x = Math.PI / 2; ribbon.position.y = 0.9; group.add(ribbon);
-    const bowM = ribbon.material;
-    [-1, 1].forEach((s) => { const w = new THREE.Mesh(new THREE.SphereGeometry(0.03, 12, 12), bowM); w.scale.set(1.3, 0.8, 0.5); w.position.set(s * 0.034, 0.9, 0.128); group.add(w); });
-
-    const chest = new THREE.Group(); chest.position.y = 0.9; group.add(chest);
-    [-1, 1].forEach((s) => { const sh = new THREE.Mesh(new THREE.SphereGeometry(0.065, 16, 16), porcelain(THREE, F.skin)); sh.position.set(s * 0.14, 0.27, 0); sh.scale.set(1, 0.8, 1); chest.add(sh); });
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.055, 0.12, 16), porcelain(THREE, F.skin)); neck.position.y = 0.34; chest.add(neck);
-    const necklace = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.005, 8, 32), new THREE.MeshStandardMaterial({ color: 0xC9A227, metalness: 1, roughness: 0.3 }));
-    necklace.rotation.x = Math.PI / 2 - 0.4; necklace.position.set(0, 0.31, 0.03); chest.add(necklace);
-
-    const head = new THREE.Group(); head.position.y = 0.38; chest.add(head);
-    const hr = 0.165;
-    const face = new THREE.Mesh(new THREE.SphereGeometry(hr, 32, 24), porcelain(THREE, F.skin)); face.position.y = hr; face.castShadow = true; head.add(face);
-    const hair = new THREE.Mesh(new THREE.SphereGeometry(hr * 1.06, 32, 20, 0, Math.PI * 2, 0, Math.PI * 0.5), porcelain(THREE, F.hair, { roughness: 0.4 }));
-    hair.position.set(0, hr * 1.02, -hr * 0.12); hair.rotation.x = -0.32; hair.castShadow = true; head.add(hair);
-    const bun = new THREE.Mesh(new THREE.SphereGeometry(0.075, 20, 16), porcelain(THREE, F.hair, { roughness: 0.4 }));
-    bun.position.set(0, hr * 1.5, -hr * 0.85); bun.castShadow = true; head.add(bun);
-    const pin = new THREE.Mesh(new THREE.SphereGeometry(0.018, 12, 12), new THREE.MeshStandardMaterial({ color: 0xC9A227, metalness: 1, roughness: 0.3 }));
-    pin.position.set(0.07, hr * 1.55, -hr * 0.55); head.add(pin);
-    const eyes = makeEyes(THREE, hr); eyes.position.y = hr; head.add(eyes);
-
-    const armOuter = makeArm(THREE, { len: 0.42, r: 0.042, skinHex: F.skin, gloveHex: P.gloves });
-    armOuter.position.set(0.17, 0.27, 0); armOuter.rotation.z = 0.5; armOuter.rotation.x = -0.2; chest.add(armOuter); // 叉腰感
-    const armInner = makeArm(THREE, { len: 0.42, r: 0.042, skinHex: F.skin, gloveHex: P.gloves });
-    armInner.position.set(-0.17, 0.27, 0); armInner.rotation.z = -0.14; chest.add(armInner);
-
-    return { group, chest, head, armInner, armOuter, rest: { z: -0.14, x: 0 }, hold: { z: -0.78, x: -0.28 } };
-  }
-
-  /* ── 心的幾何(擠出 + 平滑) ───────────────── */
   function makeHeartGeometry(THREE, size = 1, depth = 0.34) {
     const s = new THREE.Shape();
     s.moveTo(0, 0.32);
@@ -387,33 +319,56 @@ window.Scene3D = (function () {
     const THREE = S.THREE, k = 1 - Math.pow(0.92, dt * 60);
     if (S.active === 'room') {
       const R = S.room; R.t += dt;
-      // 相機路徑:遠 → 近,微微環繞
+      // 親吻時間軸(秒):0–.7 傾身 → 停到 2.3 → 2.3–3.2 回正
+      let kiss = 0;
+      if (R.kissT >= 0) {
+        R.kissT += dt;
+        kiss = smooth(0, 0.7, R.kissT) * (1 - smooth(2.3, 3.2, R.kissT));
+        if (R.kissT > 0.55 && !R.burstDone) { R.burstDone = true; burstHearts(R); }
+        if (R.kissT > 3.4) { R.kissT = -1; R.burstDone = false; }
+      }
+      R.kissK += (kiss - R.kissK) * k;
+      const hands = R.hands ? 1 : 0;
+      R.heartK += (hands - R.heartK) * k * 0.7;
+      // 相機路徑:遠 → 近,微微環繞;親吻時再推近一點
       const a = smooth(0, 0.7, roomP);
       const orbit = Math.sin(roomP * Math.PI) * 0.9;
-      R.camera.position.set(lerp(0.4, -0.3, roomP) + orbit * 0.4, lerp(1.7, 1.15, a), lerp(7.6, 4.3, a));
-      R.camera.lookAt(0, lerp(0.75, 0.9, a), 0);
+      R.camera.position.set(lerp(0.4, -0.3, roomP) + orbit * 0.4, lerp(1.7, 1.2, a) + 0.1 * R.kissK, lerp(7.6, 4.4, a) - 0.9 * R.kissK);
+      R.camera.lookAt(0, lerp(0.75, 0.92, a) + 0.3 * R.kissK, 0);
       R.scene.fog.density = lerp(0.075, 0.018, smooth(0, 0.45, roomP)) + smooth(0.82, 1, roomP) * 0.12;
-      // 呼吸
-      const br = 1 + 0.005 * Math.sin((R.t / 4) * Math.PI * 2);
-      R.father.chest.scale.set(br, br, br); R.mother.chest.scale.set(br, br, br);
-      // 視線跟隨(±25°),牽手時彼此對望
-      const gx = clamp(S.pointer.x * 0.5, -0.44, 0.44), gy = clamp(-S.pointer.y * 0.18, -0.2, 0.2);
-      const look = R.hands ? 1 : 0;
-      [R.father, R.mother].forEach((f, i) => {
-        const toward = i === 0 ? 0.42 : -0.42;
-        const ty = lerp(gx, toward, look), tx = lerp(gy, 0.05, look);
-        f.head.rotation.y += (ty - f.head.rotation.y) * k; f.head.rotation.x += (tx - f.head.rotation.x) * k;
-        const pose = R.hands ? f.hold : f.rest;
-        f.armInner.rotation.z += (pose.z - f.armInner.rotation.z) * k;
-        f.armInner.rotation.x += (pose.x - f.armInner.rotation.x) * k;
-      });
-      // 小心
-      const heartTarget = R.hands ? 1 : 0;
-      R.heartK += (heartTarget - R.heartK) * k * 0.7;
-      const hs = Math.max(0.001, R.heartK);
+      // 呼吸(以腳底為軸的極小縮放)
+      const br = 1 + 0.004 * Math.sin((R.t / 4) * Math.PI * 2), br2 = 1 + 0.004 * Math.sin((R.t / 4.6) * Math.PI * 2 + 1.3);
+      // 視線 / 身體跟隨滑鼠(±10°),牽手時彼此微微相向,親吻時他傾身過去、她微微仰起
+      const gx = clamp(S.pointer.x * 0.18, -0.18, 0.18), gy = clamp(-S.pointer.y * 0.05, -0.05, 0.05);
+      const dirHer = R.him.feetX > R.her.feetX ? 1 : -1;     // 她要轉向他的方向(+1 = 他在右邊)
+      const herYaw = lerp(gx, 0.12 * dirHer, R.heartK), himYaw = lerp(gx, -0.12 * dirHer, R.heartK);
+      const lean = 0.035 * R.heartK;                          // 牽手:兩人微微靠近
+      const H = R.her, M = R.him;
+      H.group.rotation.y += (herYaw - H.group.rotation.y) * k;
+      M.group.rotation.y += (himYaw - M.group.rotation.y) * k;
+      H.group.rotation.x += (gy - H.group.rotation.x) * k;
+      M.group.rotation.x += (gy - M.group.rotation.x) * k;
+      H.group.rotation.z = -dirHer * (lean + 0.06 * R.kissK);
+      M.group.rotation.z = dirHer * (lean + 0.13 * R.kissK);
+      H.group.position.x = H.feetX + dirHer * (0.02 * R.heartK + 0.01 * R.kissK);
+      M.group.position.x = M.feetX - dirHer * (0.02 * R.heartK + 0.06 * R.kissK);
+      H.group.scale.set(1, br * (1 + 0.012 * R.kissK), 1);   // 她踮一下
+      M.group.scale.set(1, br2 * (1 - 0.01 * R.kissK), 1);   // 他微微低頭
+      // 小心:牽手時浮在兩人手之間;親吻時跳到臉之間
+      const hs = Math.max(0.001, Math.max(R.heartK, R.kissK * 1.3));
       R.smallHeart.scale.setScalar(hs);
-      R.smallHeart.position.y = 1.02 + Math.sin(R.t * 1.6) * 0.04 + (1 - R.heartK) * -0.2;
+      const hy = lerp(0.9, R.faceMid.y + 0.1, R.kissK);
+      R.smallHeart.position.set(R.faceMid.x, hy + Math.sin(R.t * 1.6) * 0.04 + (1 - Math.max(R.heartK, R.kissK)) * -0.2, 0.32);
       R.smallHeart.rotation.y += dt * 1.2;
+      // 親吻冒出的小心們
+      R.puffs.forEach((p) => {
+        if (p.t > 2) { p.mesh.visible = false; return; }
+        p.t += dt; p.mesh.visible = true;
+        p.vy -= 0.25 * dt; p.mesh.position.x += p.vx * dt; p.mesh.position.y += p.vy * dt; p.mesh.position.z += p.vz * dt;
+        p.mesh.rotation.y += p.spin * dt;
+        const life = p.t / 1.8, sc = Math.max(0.001, smooth(0, 0.18, life) * (1 - smooth(0.6, 1, life)) * 0.55);
+        p.mesh.scale.setScalar(sc); p.mesh.material.opacity = 1 - smooth(0.55, 1, life);
+      });
       S.canvas.style.opacity = roomOpacity;
       S.renderer.render(R.scene, R.camera);
     } else if (S.active === 'heart') {
@@ -444,7 +399,17 @@ window.Scene3D = (function () {
     S.heart.hearts.forEach((o) => { if (o.cfg && o.cfg.m === 'glass') { const c = Object.assign({}, o.cfg); o.cfg.m = '_'; applyHeartConfig(S.THREE, S.heart, o, c); } });
   };
 
+  function burstHearts(R) {
+    R.puffs.forEach((p, i) => {
+      p.t = -i * 0.12;
+      p.mesh.position.set(R.faceMid.x + (Math.random() - 0.5) * 0.1, R.faceMid.y + 0.05, 0.3);
+      p.vx = (Math.random() - 0.5) * 0.5; p.vy = 0.55 + Math.random() * 0.35; p.vz = 0.15 + Math.random() * 0.2; p.spin = (Math.random() - 0.5) * 6;
+      p.mesh.scale.setScalar(0.001); p.mesh.material.opacity = 0;
+    });
+  }
   S.setHands = function (on) { if (S.ok) S.room.hands = !!on; };
+  /* 親吻:一次性的 3.4 秒時間軸;回傳毫秒數給 UI 用 */
+  S.kiss = function () { if (!S.ok) return 0; if (S.room.kissT >= 0) return 0; S.room.kissT = 0; S.room.burstDone = false; return 3400; };
   S.heartDrag = { start() { if (S.ok) { S.heart.dragging = true; S.heart.vel = 0; } }, move(dxPx) { if (S.ok) S.heart.vel = dxPx * 0.6; }, end() { if (S.ok) S.heart.dragging = false; } };
 
   /* ── 卡片截圖:1080×1080 的心 ────────────── */

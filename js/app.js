@@ -136,13 +136,13 @@
     }
   }
 
-  const handsBtn = $('#hands-btn');
+  const handsBtn = $('#hands-btn'), kissBtn = $('#kiss-btn'), roomActions = $('#room-actions'), roomFallback = $('#room-fallback');
   function updateRoom(a, p) {
     const enter = smooth(0, 0.12, p), exit = 1 - smooth(0.9, 1, p);
     const op = (p <= 0 || p >= 1) ? 0 : Math.min(enter, exit);
     setLayer(a, op);
-    const showBtn = p > 0.22 && p < 0.86 && Scene3D.ok;
-    handsBtn.style.opacity = showBtn ? 1 : 0; handsBtn.style.pointerEvents = showBtn ? 'auto' : 'none';
+    const showBtn = p > 0.22 && p < 0.86;
+    if (a._btn !== showBtn) { a._btn = showBtn; roomActions.classList.toggle('show', showBtn); }
     if (p > 0.05 && p < 0.95 && !st.roomSound) { st.roomSound = true; Sound.piano(196, 4, 0.06); }
     if (p <= 0 || p >= 1) st.roomSound = false;
     return op;
@@ -317,6 +317,25 @@
     hit.addEventListener('pointerup', up); hit.addEventListener('pointercancel', up);
   }
 
+  /* ── 無 WebGL 的房間:同樣兩層照片,位置來自 FIGURES ── */
+  function setupRoomFallback() {
+    const FG = window.FIGURES; if (!FG) { roomFallback.hidden = false; return; }
+    const stage = $('#fb-stage'), W = FG.image.w, H = FG.image.h;
+    stage.style.setProperty('--fb-ar', (W / H).toFixed(4));
+    [['her', $('#fb-her')], ['him', $('#fb-him')]].forEach(([key, img]) => {
+      const m = FG[key];
+      stage.style.setProperty(`--${key}-x`, (m.x / W * 100).toFixed(2) + '%');
+      stage.style.setProperty(`--${key}-y`, (m.y / H * 100).toFixed(2) + '%');
+      stage.style.setProperty(`--${key}-w`, (m.w / W * 100).toFixed(2) + '%');
+      img.style.setProperty('--px', (m.pivot / m.w * 100).toFixed(2) + '%');
+      img.style.zIndex = FG.front === key ? 2 : 1;
+      img.src = m.src;
+    });
+    const herFeet = FG.her.x + FG.her.pivot, himFeet = FG.him.x + FG.him.pivot;
+    roomFallback.style.setProperty('--dir', himFeet > herFeet ? 1 : -1);
+    roomFallback.hidden = false;
+  }
+
   /* ════════════════════════ 其他互動 ════════════════════════ */
   function bindUI() {
     $('#sound').addEventListener('click', (e) => {
@@ -330,8 +349,17 @@
       const on = handsBtn.getAttribute('aria-pressed') !== 'true';
       handsBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
       handsBtn.querySelector('.txt').textContent = on ? '牽著' : '牽手';
-      Scene3D.setHands(on);
+      if (Scene3D.ok) Scene3D.setHands(on); else roomFallback.classList.toggle('hands', on);
       if (on) Sound.chord(); else Sound.ding(0);
+    });
+    kissBtn.addEventListener('click', () => {
+      if (kissBtn.classList.contains('busy')) return;
+      let ms = 3400;
+      if (Scene3D.ok) { ms = Scene3D.kiss(); if (!ms) return; }
+      else { roomFallback.classList.remove('kiss'); void roomFallback.offsetWidth; roomFallback.classList.add('kiss'); setTimeout(() => roomFallback.classList.remove('kiss'), 2600); }
+      kissBtn.classList.add('busy');
+      setTimeout(() => Sound.kiss(), 550);
+      setTimeout(() => kissBtn.classList.remove('busy'), ms);
     });
     addEventListener('pointermove', (e) => { Scene3D.pointer.x = (e.clientX / innerWidth) * 2 - 1; Scene3D.pointer.y = (e.clientY / innerHeight) * 2 - 1; }, { passive: true });
     addEventListener('keydown', (e) => {
@@ -373,10 +401,8 @@
     syncPanel();
 
     // 3D(非同步;失敗就走靜態備援)
-    Scene3D.init($('#gl')).then((ok) => {
-      if (!ok) { $('#room-fallback').hidden = false; $('#heart-fallback').hidden = false; }
-      renderHearts();
-    }).catch(() => { $('#room-fallback').hidden = false; $('#heart-fallback').hidden = false; renderHearts(); });
+    const useFallback = () => { setupRoomFallback(); $('#heart-fallback').hidden = false; renderHearts(); };
+    Scene3D.init($('#gl')).then((ok) => { if (!ok) useFallback(); else renderHearts(); }).catch(useFallback);
 
     // 字體就緒後才開始儀式(最多等 2.5 秒)
     const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();

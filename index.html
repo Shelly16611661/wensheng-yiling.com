@@ -89,12 +89,26 @@
 
   <!-- ④ 客廳 · 陶瓷人偶 -->
   <div class="act" id="room">
+    <!-- 沒有 WebGL 時的備援:同樣是兩層照片,用 CSS 做牽手 / 親吻 -->
     <div class="room-fallback" id="room-fallback" hidden>
-      <img src="assets/couple-cutout.png" alt="">
+      <div class="fb-scene">
+        <div class="fb-stage" id="fb-stage">
+          <img class="fb-him" id="fb-him" alt="" draggable="false">
+          <img class="fb-her" id="fb-her" alt="" draggable="false">
+          <i class="fb-heart" aria-hidden="true">♥</i>
+          <i class="fb-puff p1" aria-hidden="true">♥</i><i class="fb-puff p2" aria-hidden="true">♥</i><i class="fb-puff p3" aria-hidden="true">♥</i>
+        </div>
+        <div class="fb-pedestal"></div>
+      </div>
     </div>
-    <button class="hands-btn" id="hands-btn" type="button" aria-pressed="false">
-      <span class="seal">♥</span><span class="txt">牽手</span>
-    </button>
+    <div class="room-actions" id="room-actions">
+      <button class="hands-btn" id="hands-btn" type="button" aria-pressed="false">
+        <span class="seal">♥</span><span class="txt">牽手</span>
+      </button>
+      <button class="hands-btn kiss-btn" id="kiss-btn" type="button">
+        <span class="seal">♥</span><span class="txt">親吻</span>
+      </button>
+    </div>
   </div>
 
   <!-- ⑤ 心 · 定制器 -->
@@ -159,6 +173,7 @@
 <script src="js/book.js"></script>
 <script src="js/threshold.js"></script>
 <script src="js/flowers.js"></script>
+<script src="js/figures.js"></script>
 <script src="js/scene3d.js"></script>
 <script src="js/app.js"></script>
 </body>
