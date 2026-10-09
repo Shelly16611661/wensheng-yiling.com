@@ -36,33 +36,14 @@
   /* ── 文案注入 ─────────────────────────────── */
   function fillText() {
     document.title = C.siteTitle;
-    $('#hero-kicker').textContent = C.hero.kicker;
-    $('#hero-dedication').textContent = C.hero.dedication;
-    $('#hero-dates').textContent = `${C.weddingText} — ${C.anniversaryText}`;
     $('#threshold-line').textContent = C.threshold.line;
     $('#echo-1').textContent = C.echo.line1;
     $('#echo-2').textContent = C.echo.line2;
     $('#threshold .frame-caption').textContent = C.weddingText.replace(/\./g, ' · ');
   }
 
-  /* ── 音樂盒罩內飄雪:22 顆 ─────────────────── */
-  function buildSnow() {
-    const box = $('#snow-box');
-    for (let i = 0; i < 22; i++) {
-      const s = document.createElement('i');
-      const sc = 0.6 + Math.random() * 1.2;
-      s.style.left = Math.random() * 100 + '%';
-      s.style.width = s.style.height = (4 * sc).toFixed(1) + 'px';
-      s.style.animationDuration = (5 + Math.random() * 6).toFixed(2) + 's';
-      s.style.animationDelay = (-Math.random() * 11).toFixed(2) + 's';
-      s.style.setProperty('--drift', (Math.random() * 40 - 20).toFixed(1) + 'px');
-      s.style.setProperty('--o', (0.45 + Math.random() * 0.5).toFixed(2));
-      box.appendChild(s);
-    }
-  }
-
-  /* ── 首頁儀式節奏:0-1 白 → 1 「22」 → 2 音樂盒浮起 → 3 動起來 → 4 蠟封 ── */
-  function heroTimeline() {
+  /* ── 封面儀式節奏:舞台微亮 → 法典浮現 → 黃銅題牌掠光 → 封蠟可啟 ── */
+  function coverTimeline() {
     const P = A.prologue.el;
     if (REDUCED) { P.classList.add('s1', 's2', 's3', 's4'); return; }
     setTimeout(() => P.classList.add('s1'), 1000);
@@ -90,17 +71,13 @@
     return on;
   }
 
-  const wTop = $('#w-top'), wBox = $('#w-box'), wDates = $('#w-dates'), wAnniv = $('#w-anniv');
+  const coverArt = $('#cover-art');
   function updatePrologue(a, p) {
     const op = 1 - smooth(0.45, 0.92, p);
+    document.body.classList.toggle('cover-on', op > 0.02);
     if (!setLayer(a, op)) return;
     const k = smooth(0, 0.85, p);
-    wBox.style.transform = `translateY(${(-30 * k).toFixed(1)}px) scale(${(1 + 0.45 * k).toFixed(3)})`;
-    wBox.style.filter = k > 0.02 ? `blur(${(12 * k).toFixed(1)}px)` : '';
-    const tOp = 1 - smooth(0.04, 0.4, p);
-    wTop.style.transform = `translateY(${(-60 * k).toFixed(1)}px)`; wTop.style.opacity = tOp.toFixed(3);
-    wDates.style.opacity = tOp.toFixed(3);
-    wAnniv.style.transform = `scale(${(1 + 0.3 * k).toFixed(3)})`; wAnniv.style.opacity = (1 - smooth(0.25, 0.7, p)).toFixed(3);
+    coverArt.style.transform = `translate3d(0,${(-18 * k).toFixed(1)}px,0) scale(${(1 + 0.06 * k).toFixed(3)})`;
     if (p > 0.02 && !a._scrolled) { a._scrolled = true; a.el.classList.add('scrolled'); }
   }
 
@@ -390,7 +367,6 @@
   function boot() {
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
     fillText();
-    buildSnow();
     Book.build($('#book'), $('#book-stage'), C);
     Threshold.build($('#shards'), C.threshold.photo);
     Flowers.build($('#garden'), $('#spring-line'), C.spring.line);
@@ -409,7 +385,7 @@
     Promise.race([fontsReady, new Promise((r) => setTimeout(r, 2500))]).then(() => {
       document.body.classList.add('ready');
       if (hasHeartLink) { A.prologue.el.classList.add('s1', 's2', 's3', 's4'); scrollToAct('heart', 0.4, false); }
-      else { window.scrollTo(0, 0); y = 0; heroTimeline(); }
+      else { window.scrollTo(0, 0); y = 0; coverTimeline(); }
       requestAnimationFrame(loop);
     });
   }

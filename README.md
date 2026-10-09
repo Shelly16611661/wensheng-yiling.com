@@ -9,7 +9,7 @@
 
 | 幕 | 內容 | 檔案 |
 |---|---|---|
-| ① 序 | 巨型「22」、音樂盒(公仔漂浮、光暈、金座、飄雪、蠟封)、署名「給 吳文勝 與 劉翊鈴」 | `css/styles.css`、`js/app.js` |
+| ① 序 | 羅馬帝國金裝法典封面:深胡桃皮革、舊黃銅題牌、鑄銅書角與封蠟;唯一刻字「吳文勝 劉翊鈴 婚紗照」,暖光只掠過題牌一次 | `index.html`、`css/styles.css`、`js/app.js` |
 | ② 門廊 | 相框玻璃碎成 144 片花瓣、「玻璃碎了,時間開始翻頁。」 | `js/threshold.js` |
 | ③ 書 | 歐式古董書《我們的一年,又一年》:20 張婚紗照各佔一葉(正面照片、背面下一張的年份扉頁)= 20 葉 40 頁,前後再加封面葉(封面 / 序)與尾葉(跋 / 版權頁);拖曳、邊緣點擊、← →、觸控滑動、滾輪皆可翻 | `js/book.js` |
 | ④ 房間 | 上傳的公仔照片本人:拆成「她 / 他」兩層照片浮雕(Three.js 位移 + 法線,顏色 100% 來自照片),呼吸、跟隨滑鼠、「♥ 牽手」、「♥ 親吻」;無 WebGL 時改用 CSS 版同樣可牽手親吻 | `js/scene3d.js`、`tools/split-figures.py` |
@@ -28,7 +28,7 @@
 
    它會把兩個人拆成 `assets/figure-her.png` / `figure-him.png`(加上浮雕用的高度圖、法線圖)並更新 `js/figures.js`。
    打開 `tools/out/split-preview.png` 檢查紅線(縫)有沒有切對;不對的話用 `--guide "x,y x,y …"`(正規化座標)手動給縫的大概路徑,
-   或用 `--top-x` / `--bottom-x` / `--corridor` 微調。首頁音樂盒直接用原圖,不需要處理。
+   或用 `--top-x` / `--bottom-x` / `--corridor` 微調。法典封面不使用公仔照片;原始照片保留供未來獨立展示場景使用,不去背、不裁切。
 2. **20 張婚紗照** → 覆蓋 `assets/wedding-01.jpg` … `assets/wedding-20.jpg`(建議 4:5 直式、長邊 1600px 以內、每張 < 400KB)。
    - 每頁下方的小字說明在 `js/content.js` 的 `photos[]` 裡改;`fit:'contain'` 可讓橫式照片完整顯示。
    - `wedding-01.jpg` 同時也是第②幕相框裡碎裂的那一張。
@@ -53,11 +53,11 @@ python3 -m http.server 8080
 
 - HTML / CSS / 原生 JavaScript,零框架、零打包
 - Three.js r170:`vendor/three.module.min.js` 為本地副本,失敗時依序改抓 jsDelivr、unpkg;全部失敗則改為靜態備援(公仔改用 CSS 底座、心改用 SVG),其他六幕完全不受影響
-- 字體:Cormorant Garamond、Ma Shan Zheng、Noto Sans TC、Noto Serif TC(Google Fonts;字體逾時 2.5 秒仍會開場)
+- 字體:封面中文 Noto Serif TC 600、英文刻印 Cinzel 600;既有幕使用 Cormorant Garamond、Ma Shan Zheng、Noto Sans TC、Noto Serif TC(Google Fonts;字體逾時 2.5 秒仍會開場)
 - 聲音:Web Audio 現場合成(音樂盒、翻頁、玻璃、弦樂),預設關閉,不載入任何音檔
 - 降級:`prefers-reduced-motion` 略過自動時間軸;低幀率自動降低像素比、關閉陰影與霧
 - 測試:`node tools/test/scene-test.mjs`(用真正的 Three.js 建場景)、`node tools/test/dom-test.js`(jsdom 跑整頁,需要 jsdom)
 
 ## 色彩
 
-`#FAFAFA` 冷白為底、`#1A1A1A` 墨黑、`#C9202A` 唯一的紅、`#C9A227` 金只用在燙金與細線。
+封面 MVP:`#2B1B18` 深胡桃皮革、`#642F29` 勃根地酒紅、`#A88950` 舊黃銅、`#E3D6BA` 羊皮紙。其他幕在本階段保留既有 `#FAFAFA` 冷白、`#1A1A1A` 墨黑、`#C9202A` 紅與 `#C9A227` 金。

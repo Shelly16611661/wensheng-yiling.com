@@ -1,12 +1,15 @@
 /* ============================================================
    文勝 · 翊鈴 — 相愛相守 22 年
-   視覺系統:冷白 #FAFAFA 佔 90%,#C9202A 佔 5%,其餘灰階
+   封面 MVP:深胡桃皮革 #2B1B18、酒紅 #642F29、舊黃銅 #A88950、羊皮紙 #E3D6BA；其他幕保留既有視覺
    ============================================================ */
 :root{
   --paper:#FAFAFA; --paper-warm:#EFEFEF; --fog:#E8E8E8;
   --ink:#1A1A1A; --ink-soft:#6E6E6E; --hair:rgba(26,26,26,.12);
   --rose:#C9202A; --rose-deep:#9E1B24; --rose-soft:#E8C4C0;
   --gold:#C9A227; --gold-deep:#8A6B12; --sage:#A8B0A0;
+  --cover-leather:#2B1B18; --cover-wine:#642F29; --cover-brass:#A88950; --cover-parchment:#E3D6BA;
+  --cover-ink:#211715; --cover-shadow:#100B09;
+  --cover-serif:"Noto Serif TC","Songti TC","PMingLiU",serif; --cover-display:"Cinzel",serif;
   --serif:"Noto Serif TC","Songti TC","PMingLiU",serif;
   --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
   --disp:"Cormorant Garamond","Cormorant",Georgia,serif;
@@ -65,114 +68,100 @@ body.ready #sound{opacity:1}
   background:linear-gradient(180deg,rgba(201,162,39,.16),rgba(201,162,39,0) 78%);
   -webkit-background-clip:text;background-clip:text;user-select:none;
   transform:translateY(-2%);will-change:transform,opacity}
-#prologue.s3 .anniv .num{animation:breathe 9s ease-in-out infinite}
-@keyframes breathe{0%,100%{transform:translateY(-2%) scale(1);opacity:.9}50%{transform:translateY(-2%) scale(1.025);opacity:1}}
-
-/* ═══════════════════════════ ① 序 · 音樂盒 ═══════════════════════════ */
-#prologue{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
-  padding:clamp(56px,9vh,110px) 20px clamp(40px,7vh,80px)}
-#prologue .anniv{opacity:0;transition:opacity 1.6s var(--ease)}
-#prologue.s1 .anniv{opacity:1}
-/* .w = 捲動驅動的外層(入場動畫在內層,兩者不打架) */
-#prologue .w{position:relative;display:flex;flex-direction:column;align-items:center;will-change:transform,opacity}
-#prologue .w-anniv{position:absolute;inset:0;display:block;z-index:0}
-#prologue #w-top{z-index:3}
-#prologue #w-box{z-index:2}
-#prologue #w-dates{z-index:3}
-#prologue .wax-seal{pointer-events:none}
+/* ═══════════════════════ ① 序 · 羅馬帝國金裝法典 ═══════════════════════ */
+#prologue{isolation:isolate;overflow:hidden;text-align:center;
+  background:radial-gradient(ellipse at 50% 46%,#38251F 0%,var(--cover-leather) 46%,#130E0C 78%,var(--cover-shadow) 100%)}
+#prologue::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(ellipse 43% 62% at 50% 42%,rgba(168,137,80,.15),rgba(100,47,41,.08) 43%,transparent 75%),
+    linear-gradient(180deg,rgba(8,6,5,.1),transparent 24%,transparent 72%,rgba(5,4,4,.25));
+  opacity:0;transition:opacity 2s var(--ease)}
+#prologue.s1::before{opacity:1}
+#prologue .cover-stage{position:absolute;inset:0;display:grid;place-items:center;perspective:1500px;z-index:1}
+.cover-art{position:relative;width:clamp(250px,34vw,430px);display:grid;place-items:center;transform-origin:50% 52%;will-change:transform}
+.cover-aura{position:absolute;left:50%;top:48%;width:142%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
+  background:radial-gradient(circle,rgba(168,137,80,.19) 0%,rgba(100,47,41,.1) 34%,rgba(43,27,24,.04) 56%,transparent 70%);
+  filter:blur(10px);opacity:0;transition:opacity 2s var(--ease);pointer-events:none}
+#prologue.s1 .cover-aura{opacity:1}
+.cover-shadow{position:absolute;left:50%;bottom:-7%;width:126%;height:8%;transform:translateX(-50%);border-radius:50%;
+  background:radial-gradient(ellipse,rgba(0,0,0,.78) 0%,rgba(0,0,0,.42) 42%,transparent 72%);filter:blur(13px);pointer-events:none}
+.cover-object{position:relative;width:100%;aspect-ratio:5/7;transform-style:preserve-3d;
+  transform:translateY(34px) rotateY(-11deg) rotateX(2deg) scale(.96);opacity:0;
+  filter:drop-shadow(0 34px 30px rgba(0,0,0,.52));transition:opacity 1.45s var(--ease),transform 1.8s var(--ease);will-change:transform,opacity}
+#prologue.s2 .cover-object{opacity:1;transform:translateY(0) rotateY(-8deg) rotateX(1deg) scale(1)}
+.cover-block{position:absolute;inset:8px -13px -8px 12px;z-index:0;transform:translateZ(-9px);
+  border:1px solid rgba(69,48,33,.9);border-radius:2px 7px 7px 2px;
+  background:repeating-linear-gradient(180deg,rgba(87,67,43,.18) 0 1px,rgba(235,221,193,.8) 1px 3px,rgba(174,150,111,.5) 3px 4px),
+    linear-gradient(90deg,#8D7757 0%,#E3D6BA 32%,#C8B58D 78%,#786443 100%);
+  box-shadow:9px 12px 18px rgba(0,0,0,.38),inset 0 0 0 2px rgba(255,245,218,.32)}
+.cover-backboard{position:absolute;inset:0;z-index:0;transform:translateZ(-17px) translate(-3px,2px);border-radius:3px 8px 8px 3px;
+  border:2px solid #493027;background:linear-gradient(135deg,#4C3026,#281A16 62%,#1D1311);
+  box-shadow:0 18px 32px rgba(0,0,0,.45)}
+.cover-front{position:absolute;inset:0;z-index:1;transform:translateZ(10px);overflow:hidden;border-radius:3px 8px 8px 3px;
+  border:1px solid rgba(168,137,80,.58);
+  background:repeating-linear-gradient(118deg,rgba(235,214,180,.025) 0 1px,transparent 1px 5px),
+    repeating-linear-gradient(28deg,rgba(0,0,0,.075) 0 1px,transparent 1px 8px),
+    radial-gradient(ellipse at 35% 24%,rgba(117,78,57,.18),transparent 44%),
+    linear-gradient(138deg,#35231E 0%,var(--cover-leather) 52%,#211512 100%);
+  box-shadow:inset 0 0 0 5px rgba(16,11,9,.5),inset 0 0 0 6px rgba(168,137,80,.32),
+    inset 12px 0 18px rgba(0,0,0,.38),inset -3px 0 12px rgba(226,194,140,.06)}
+.cover-spine{position:absolute;left:0;top:0;bottom:0;width:8%;z-index:1;
+  background:linear-gradient(90deg,#1A100F 0%,#4A3027 40%,#35221C 78%,rgba(16,11,9,.18) 100%);
+  box-shadow:inset -1px 0 rgba(168,137,80,.42),inset 3px 0 5px rgba(0,0,0,.6)}
+.cover-spine::before,.cover-spine::after{content:"";position:absolute;left:24%;right:14%;height:1px;background:rgba(168,137,80,.55);box-shadow:0 2px rgba(13,9,8,.5)}
+.cover-spine::before{top:8%}.cover-spine::after{bottom:8%}
+.cover-inset{position:absolute;inset:4.5%;z-index:2;border:1px solid rgba(168,137,80,.49);pointer-events:none}
+.cover-inset::before{content:"";position:absolute;inset:5px;border:1px solid rgba(168,137,80,.22)}
+.cover-corner{position:absolute;z-index:3;width:38px;height:38px;pointer-events:none;
+  background:linear-gradient(135deg,#D0B77F 0%,#A88950 43%,#705432 76%,#48351F 100%);
+  clip-path:polygon(0 0,100% 0,100% 10%,12% 10%,12% 100%,0 100%);filter:drop-shadow(0 2px 1px rgba(0,0,0,.62))}
+.cover-corner::before{content:"";position:absolute;top:3px;left:3px;width:7px;height:7px;border:1px solid rgba(80,57,29,.88);
+  background:linear-gradient(135deg,#E3D6BA,#A88950);transform:rotate(45deg)}
+.cover-corner.tl{top:6.5%;left:9%}
+.cover-corner.tr{top:6.5%;right:5%;transform:scaleX(-1)}
+.cover-corner.bl{bottom:6.5%;left:9%;transform:scaleY(-1)}
+.cover-corner.br{bottom:6.5%;right:5%;transform:scale(-1)}
+.cover-plaque{position:absolute;left:15%;right:10%;top:34%;height:25%;z-index:4;display:grid;place-items:center;overflow:hidden;
+  border:1px solid rgba(66,48,27,.94);border-radius:2px;
+  background:linear-gradient(135deg,#67502F 0%,var(--cover-brass) 18%,#D1B978 39%,#B09356 58%,#765A34 82%,#4A3825 100%);
+  box-shadow:inset 0 0 0 2px rgba(226,205,156,.42),inset 0 0 0 5px rgba(38,27,18,.32),
+    inset 0 8px 12px rgba(255,244,208,.15),0 8px 15px rgba(0,0,0,.36)}
+.cover-plaque::before{content:"";position:absolute;inset:6px;border:1px solid rgba(42,31,20,.55);pointer-events:none}
+.cover-plaque::after{content:"";position:absolute;inset:-20% -30%;z-index:1;opacity:0;pointer-events:none;
+  background:linear-gradient(108deg,transparent 34%,rgba(255,239,191,.08) 43%,rgba(255,248,218,.86) 50%,rgba(255,229,166,.16) 57%,transparent 66%);
+  transform:translateX(-125%) skewX(-18deg)}
+#prologue.s3 .cover-plaque::after{animation:plaqueSweep 1.65s cubic-bezier(.2,.72,.25,1) .3s 1 both}
+.cover-title{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:var(--cover-ink);font-family:var(--cover-serif);font-weight:600;letter-spacing:.13em;line-height:1.55;
+  text-shadow:0 1px 0 rgba(244,226,179,.32),0 -1px 0 rgba(45,32,20,.2)}
+.cover-title span:first-child{font-size:clamp(14px,1.55vw,19px);white-space:nowrap}
+.cover-title span:last-child{font-size:clamp(18px,2vw,25px);white-space:nowrap}
+@keyframes plaqueSweep{0%{opacity:0;transform:translateX(-125%) skewX(-18deg)}12%{opacity:.86}78%{opacity:.72}100%{opacity:0;transform:translateX(125%) skewX(-18deg)}}
+.wax-seal{position:absolute;right:8%;bottom:8%;z-index:5;width:clamp(43px,5.2vw,58px);aspect-ratio:1;border:1px solid rgba(39,16,14,.9);border-radius:50%;
+  display:grid;place-items:center;color:transparent;opacity:0;transform:scale(.72);
+  background:radial-gradient(circle at 31% 26%,#A05249 0%,#75332F 45%,var(--cover-wine) 76%,#3D1F1D 100%);
+  box-shadow:inset 0 2px 5px rgba(255,218,183,.23),inset 0 -7px 11px rgba(18,7,6,.4),0 6px 12px rgba(0,0,0,.38);
+  transition:opacity .9s var(--ease),transform .9s var(--ease),filter .3s;pointer-events:none}
+.seal-relief{display:block;width:55%;aspect-ratio:1;border:1px solid rgba(227,190,144,.38);border-radius:50%;
+  box-shadow:inset 0 0 0 3px rgba(53,19,17,.16),0 1px 0 rgba(28,9,8,.5)}
+#prologue.s2 .wax-seal{opacity:.94;transform:scale(1)}
 #prologue.is-active.s4 .wax-seal{pointer-events:auto}
+#prologue.is-active.s4 .wax-seal:hover{filter:brightness(1.18);transform:scale(1.06)}
 #book-act.is-active .book-stage{pointer-events:auto}
 #book-act .book-stage{pointer-events:none}
 #heart.is-active .heart-panel.show{pointer-events:auto}
 #heart .heart-panel{pointer-events:none}
-
-.hero-top{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;gap:10px;
-  opacity:0;transform:translateY(14px);transition:opacity 1.4s var(--ease) .2s,transform 1.4s var(--ease) .2s}
-#prologue.s2 .hero-top{opacity:1;transform:none}
-.kicker{font-family:var(--disp);font-size:clamp(11px,1.3vw,13px);letter-spacing:.5em;padding-left:.5em;
-  color:var(--gold);text-transform:uppercase}
-.dedication{font-family:var(--serif);font-size:clamp(15px,1.8vw,18px);letter-spacing:.42em;padding-left:.42em;color:var(--ink)}
-.dates{position:relative;z-index:3;margin-top:clamp(18px,3vh,30px);font-family:var(--disp);font-size:12px;letter-spacing:.34em;
-  padding-left:.34em;color:var(--gold);opacity:0;transition:opacity 1.4s var(--ease) .6s}
-#prologue.s2 .dates{opacity:1}
-
-/* 音樂盒 */
-.music-box{position:relative;z-index:2;width:min(340px,66vw);aspect-ratio:3/4;margin-top:clamp(14px,3vh,34px);
-  perspective:900px;transform-style:preserve-3d;isolation:isolate;
-  opacity:0;transform:translateY(40px);transition:opacity 1.4s var(--ease),transform 1.6s var(--ease);
-  will-change:transform,opacity}
-#prologue.s2 .music-box{opacity:1;transform:none}
-
-.halo{position:absolute;left:50%;top:44%;width:140%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
-  background:radial-gradient(circle,rgba(232,196,192,.55) 0%,rgba(232,196,192,.15) 35%,transparent 62%);
-  filter:blur(6px);pointer-events:none;z-index:0;opacity:0;transition:opacity 2s}
-.halo-2{width:100%;background:radial-gradient(circle,rgba(255,255,255,.95) 0%,rgba(255,255,255,0) 55%)}
-#prologue.s3 .halo{opacity:1;animation:haloSpin 14s linear infinite}
-#prologue.s3 .halo-2{animation-duration:9s;animation-direction:reverse}
-@keyframes haloSpin{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}
-
-.base{position:absolute;left:50%;bottom:7%;width:70%;aspect-ratio:3/1;transform:translateX(-50%);z-index:1;pointer-events:none}
-.base-top{position:absolute;inset:0;border-radius:50%;
-  background:radial-gradient(ellipse at 50% 32%,#FFFDF8 0%,#E4CE8C 42%,#C9A227 78%,#8A6B12 100%);
-  box-shadow:inset 0 6px 14px rgba(255,255,255,.7),inset 0 -8px 18px rgba(90,70,10,.45),0 14px 26px -10px rgba(26,26,26,.4)}
-.base-rim{position:absolute;left:0;right:0;top:50%;height:60%;border-radius:0 0 50% 50%/0 0 100% 100%;
-  background:linear-gradient(180deg,#B8901E,#7A5E10);z-index:-1;
-  clip-path:polygon(0 0,100% 0,100% 100%,0 100%)}
-.base-key{position:absolute;right:-7%;top:22%;width:24%;aspect-ratio:1;display:grid;place-items:center;border-radius:50%;
-  background:linear-gradient(145deg,#F4E4A8,#C9A227 60%,#8A6B12);color:#FFFDF8;font-size:14px;
-  box-shadow:inset 0 -3px 6px rgba(0,0,0,.35),0 4px 10px -4px rgba(26,26,26,.6)}
-#prologue.s3 .base-key{animation:keySpin 3.5s linear infinite}
-@keyframes keySpin{to{transform:rotate(360deg)}}
-.base-shadow{position:absolute;left:6%;right:6%;bottom:-16%;height:26px;border-radius:50%;
-  background:radial-gradient(ellipse,rgba(26,26,26,.32),transparent 70%);filter:blur(4px)}
-#prologue.s3 .base-shadow{animation:shadowPulse 3.5s ease-in-out infinite}
-@keyframes shadowPulse{0%,100%{transform:scaleX(1);opacity:.8}50%{transform:scaleX(.94);opacity:.6}}
-
-.figure-wrap{position:absolute;left:0;right:0;top:0;bottom:19%;z-index:4;display:flex;align-items:flex-end;justify-content:center;
-  transform-style:preserve-3d}
-#prologue.s3 .figure-wrap{animation:figureBob 6s ease-in-out infinite}
-@keyframes figureBob{
-  0%,100%{transform:translateY(0) rotateY(-11deg)}
-  25%{transform:translateY(-6px) rotateY(0)}
-  50%{transform:translateY(0) rotateY(11deg)}
-  75%{transform:translateY(-6px) rotateY(0)}}
-.figure{max-height:100%;max-width:88%;width:auto;object-fit:contain;
-  filter:drop-shadow(0 22px 26px rgba(26,26,26,.24));transition:filter .6s}
-.music-box:hover .figure{filter:drop-shadow(0 26px 30px rgba(201,32,42,.30)) brightness(1.06)}
-.figure-shadow{position:absolute;left:22%;right:22%;bottom:-3%;height:14px;border-radius:50%;
-  background:radial-gradient(ellipse,rgba(26,26,26,.28),transparent 72%);filter:blur(3px)}
-
-.dome-shine{position:absolute;inset:-6% -4% 12%;border-radius:50% 50% 8% 8%/42% 42% 8% 8%;pointer-events:none;z-index:6;
-  background:linear-gradient(135deg,rgba(255,255,255,.65) 0%,rgba(255,255,255,.06) 32%,transparent 55%,rgba(255,255,255,.35) 82%,rgba(255,255,255,.05) 100%);
-  mix-blend-mode:screen}
-.dome-shine::after{content:"";position:absolute;inset:0;border-radius:inherit;border:1px solid rgba(255,255,255,.55);border-bottom-color:transparent}
-
-.snow-box{position:absolute;inset:0 0 12%;pointer-events:none;overflow:hidden;border-radius:50% 50% 8% 8%/42% 42% 8% 8%;z-index:5}
-.snow-box i{position:absolute;top:-10%;width:5px;height:5px;border-radius:50%;opacity:0;
-  background:radial-gradient(circle at 30% 30%,#fff,rgba(232,196,192,.85));box-shadow:0 0 6px rgba(255,255,255,.9)}
-#prologue.s3 .snow-box i{animation:snowFall linear infinite}
-@keyframes snowFall{0%{opacity:0;transform:translateY(0) translateX(0)}8%{opacity:var(--o,.8)}
-  90%{opacity:var(--o,.8)}100%{opacity:0;transform:translateY(560%) translateX(var(--drift,0))}}
-
-.wax-seal{position:absolute;right:2%;bottom:4%;width:52px;height:52px;border-radius:50%;z-index:8;
-  background:radial-gradient(circle at 34% 30%,#D4626C,#C9202A 46%,#9E1B24);
-  box-shadow:inset 0 -4px 10px rgba(0,0,0,.28),inset 0 4px 8px rgba(255,255,255,.32),0 8px 18px -6px rgba(158,27,36,.6);
-  display:grid;place-items:center;color:#FBEDEA;font-size:19px;opacity:0;transform:scale(.6);
-  transition:opacity 1s var(--ease),transform 1s var(--ease)}
-.wax-seal span{transform:translateY(1px)}
-.wax-seal::after{content:"";position:absolute;inset:-8px;border-radius:50%;border:1px dashed rgba(201,32,42,.5);opacity:0}
-#prologue.s4 .wax-seal{opacity:1;transform:none;animation:sealPulse 2.4s ease-in-out infinite 1s}
-#prologue.s4 .wax-seal::after{animation:sealRing 2.4s ease-out infinite 1s}
-@keyframes sealPulse{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.08) rotate(-6deg)}}
-@keyframes sealRing{0%{transform:scale(.95);opacity:.9}100%{transform:scale(1.25);opacity:0}}
-.wax-seal:hover{filter:brightness(1.08)}
-
-.scroll-cue{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;
-  font-family:var(--disp);font-size:10px;letter-spacing:.5em;padding-left:.5em;color:var(--ink-soft);opacity:0;transition:opacity 1.2s}
-.scroll-cue i{width:1px;height:34px;background:linear-gradient(180deg,var(--ink-soft),transparent);transform-origin:top;animation:cue 2.2s ease-in-out infinite}
-#prologue.s4 .scroll-cue{opacity:.8}
+.scroll-cue{position:absolute;left:50%;bottom:max(22px,env(safe-area-inset-bottom));z-index:3;width:24px;height:40px;transform:translateX(-50%);
+  display:grid;place-items:start center;opacity:0;transition:opacity 1s;color:var(--cover-parchment);pointer-events:none}
+.scroll-cue i{display:block;width:1px;height:32px;background:linear-gradient(180deg,rgba(227,214,186,.75),rgba(168,137,80,.12));
+  transform-origin:top;animation:coverCue 2.4s ease-in-out infinite}
+#prologue.s4 .scroll-cue{opacity:.74}
 #prologue.scrolled .scroll-cue{opacity:0}
-@keyframes cue{0%{transform:scaleY(0)}45%{transform:scaleY(1)}100%{transform:scaleY(1) translateY(34px);opacity:0}}
+@keyframes coverCue{0%{transform:scaleY(0);opacity:0}36%{transform:scaleY(1);opacity:1}100%{transform:scaleY(1) translateY(18px);opacity:0}}
+body.cover-on #progress{background:rgba(227,214,186,.2)}
+body.cover-on #progress i{background:var(--cover-brass)}
+body.cover-on #progress b{background:var(--cover-parchment)}
+body.cover-on #sound,body.cover-on #sound:hover,body.cover-on #sound[aria-pressed="true"]{color:var(--cover-parchment)}
+body.cover-on #sound .eq i{background:currentColor}
 
 /* ═══════════════════════════ ② 門廊 · 碎裂 ═══════════════════════════ */
 #threshold{display:flex;flex-direction:column;align-items:center;justify-content:center;perspective:1400px}
@@ -412,7 +401,10 @@ body.ready #sound{opacity:1}
 @media (max-width:640px){
   #progress{left:14px}
   #sound{right:16px;top:16px}
-  .music-box{width:min(300px,70vw);margin-top:18px}
+  .cover-art{width:min(78vw,380px)}
+  .cover-corner{width:29px;height:29px}
+  .cover-title span:first-child{font-size:clamp(13px,3.6vw,17px)}
+  .cover-title span:last-child{font-size:clamp(17px,4.2vw,22px)}
   .anniv .num{font-size:min(70vh,84vw)}
   .book{width:96vw}
   .pg-photo .ph{width:92%;height:70%}
@@ -422,13 +414,16 @@ body.ready #sound{opacity:1}
   .threshold-line{white-space:normal;width:80vw}
 }
 @media (max-height:620px){
-  .music-box{width:min(240px,50vh)}
+  .cover-art{width:min(30vw,270px)}
+  .scroll-cue{display:none}
 }
 
 /* ─────────────────────────────── 減少動態 ─────────────────────────────── */
 @media (prefers-reduced-motion:reduce){
-  #prologue.s3 .anniv .num,#prologue.s3 .halo,#prologue.s3 .base-key,#prologue.s3 .base-shadow,#prologue.s3 .figure-wrap,
-  #prologue.s3 .snow-box i,#prologue.s4 .wax-seal,#prologue.s4 .wax-seal::after,.scroll-cue i,#sound .eq i,
-  .flower svg,.heart-fallback svg{animation:none!important}
+  #prologue .cover-object,#prologue .cover-aura,#prologue .cover-plaque::after,#prologue .wax-seal,.scroll-cue i,#sound .eq i,
+  .flower svg,.heart-fallback svg{animation:none!important;transition:none!important}
+  #prologue.s2 .cover-object{opacity:1;transform:none}
+  #prologue .cover-aura{opacity:1}
+  #prologue.s2 .wax-seal{opacity:.94;transform:none}
   .leaf{transition-duration:.3s}
 }

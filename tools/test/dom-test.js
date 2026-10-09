@@ -49,8 +49,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await sleep(120);
   console.log('body.ready =', document.body.classList.contains('ready'), '| Scene3D.ok =', window.Scene3D.ok, '| room-fallback hidden =', $('#room-fallback').hidden, '| heart-fallback hidden =', $('#heart-fallback').hidden);
   console.log('fallback vars:', $('#fb-stage').style.cssText.slice(0, 120), '| her src =', $('#fb-her').getAttribute('src'), '| dir =', $('#room-fallback').style.getPropertyValue('--dir'));
-  console.log('leaves =', window.Book.leaves, '| shards =', document.querySelectorAll('#shards .shard').length, '| flowers =', document.querySelectorAll('#garden .flower').length, '| snow =', document.querySelectorAll('#snow-box i').length);
-  console.log('title =', document.title, '| dates =', $('#hero-dates').textContent, '| dedication =', $('#hero-dedication').textContent);
+  console.log('leaves =', window.Book.leaves, '| shards =', document.querySelectorAll('#shards .shard').length, '| flowers =', document.querySelectorAll('#garden .flower').length);
+  const coverText = $('#prologue').textContent.replace(/\s+/g, ' ').trim();
+  console.log('title =', document.title, '| cover text =', coverText);
+  if (coverText !== '吳文勝 劉翊鈴 婚紗照') errors.push('Unexpected cover text: ' + coverText);
+  if (/\d|XXII/i.test(coverText)) errors.push('Cover contains a number or Roman numeral: ' + coverText);
   const total = parseFloat($('#scroller').style.height) - 900, steps = 300, seen = {};
   for (let i = 0; i <= steps; i++) {
     window.__scrollY = (total * i) / steps;
