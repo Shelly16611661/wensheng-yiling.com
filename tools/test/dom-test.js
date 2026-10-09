@@ -41,7 +41,7 @@ const dom = new JSDOM(html, {
 const { window } = dom; const { document } = window;
 const $ = (s) => document.querySelector(s);
 function run(rel) { try { window.eval(fs.readFileSync(path.join(ROOT, rel), 'utf8') + `\n//# sourceURL=${rel}`); } catch (e) { errors.push(`script ${rel}: ${e.stack}`); } }
-['js/content.js', 'js/audio.js', 'js/book.js', 'js/threshold.js', 'js/flowers.js', 'js/figures.js', 'js/scene3d.js', 'js/app.js'].forEach(run);
+['js/content.js', 'js/audio.js', 'js/book.js', 'js/threshold.js', 'js/flowers.js', 'js/figures.js', 'js/scene3d.js', 'js/dolls.js', 'js/app.js'].forEach(run);
 function tick(ms) { window.__now += ms; const q = window.__rafQ; window.__rafQ = []; q.forEach((cb) => { try { cb(window.__now); } catch (e) { errors.push('raf: ' + e.stack); } }); }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -62,6 +62,24 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     if (i % 60 === 0) console.log(`t=${(i / steps).toFixed(2)} on=[${[...document.querySelectorAll('.act.is-on')].map((a) => `${a.id}:${a.style.opacity}`).join(' ')}] book.cur=${window.Book.cur} actions=${$('#room-actions').classList.contains('show')}`);
   }
   console.log('acts seen:', JSON.stringify(seen), '| flowers bloomed:', document.querySelectorAll('#garden .flower.on').length, '| echo:', $('#echo').className);
+  // 芭蕾舞音樂盒:無 WebGL 備援、點擊與水平滑動切換原圖
+  const dollStart = (130 + 150 + 130 + window.Book.leaves * 34 + 230) / 100 * 900;
+  window.__scrollY = 0; for (let k = 0; k < 35; k++) tick(16);
+  window.__scrollY = dollStart + (210 / 100 * 900) * 0.5; for (let k = 0; k < 90; k++) tick(16);
+  console.log('doll active =', $('#dolls').classList.contains('is-active'), '| CSS fallback =', !$('#doll-fallback').hidden, '| photo =', window.DollScene.getPhoto());
+  $('#doll-photo-hit').click();
+  if (window.DollScene.getPhoto() !== 1 || !$('#doll-photo-1').classList.contains('active')) errors.push('Doll tap did not change photo');
+  const pointer = (type, x, y) => { const e = new window.Event(type, { bubbles: true }); Object.defineProperties(e, { clientX: { value: x }, clientY: { value: y }, pointerId: { value: 7 } }); $('#doll-photo-hit').dispatchEvent(e); };
+  pointer('pointerdown', 520, 350); pointer('pointerup', 585, 354);
+  if (window.DollScene.getPhoto() !== 0 || !$('#doll-photo-0').classList.contains('active')) errors.push('Doll swipe did not change photo');
+  let melodyNotes = 0; const originalDing = window.Sound.ding; window.Sound.ding = () => { melodyNotes++; };
+  if (window.Sound.enabled) errors.push('Sound should start disabled');
+  $('#sound').click();
+  if (!window.Sound.enabled || melodyNotes < 1) errors.push('Doll melody did not start through the global sound switch');
+  $('#sound').click();
+  if (window.Sound.enabled) errors.push('Doll melody should stop when global sound is disabled');
+  window.Sound.ding = originalDing;
+  console.log('doll click/swipe → photo =', window.DollScene.getPhoto(), '| melody notes after global sound toggle =', melodyNotes);
   // 房間:牽手 / 親吻(備援模式)
   window.__scrollY = 0; for (let k = 0; k < 30; k++) tick(16);
   const roomStart = (130 + 150 + 130 + window.Book.leaves * 34) / 100 * 900;

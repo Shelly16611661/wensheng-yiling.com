@@ -109,7 +109,38 @@
     </div>
   </div>
 
-  <!-- ⑤ 心 · 定制器 -->
+  <!-- ⑤ 芭蕾舞音樂盒 · 陶瓷娃娃獨立場景 -->
+  <div class="act" id="dolls">
+    <div class="doll-fallback" id="doll-fallback" hidden aria-hidden="true">
+      <div class="doll-fallback-spot"></div>
+      <div class="doll-fallback-haze"></div>
+      <div class="doll-fallback-stage">
+        <div class="doll-turntable-rotator">
+          <div class="doll-turntable-disc"></div>
+          <div class="doll-turntable-trim"></div>
+          <div class="doll-turntable-studs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+      </div>
+      <div class="doll-fallback-stand"></div>
+      <div class="doll-fallback-contact"></div>
+      <div class="doll-fallback-dust" id="doll-fallback-dust"></div>
+      <div class="doll-fallback-portrait">
+        <div class="doll-frame-shell">
+          <div class="doll-frame-inset"></div>
+          <div class="doll-photo-window">
+            <img class="doll-photo active" id="doll-photo-0" src="assets/結婚照.jpeg" alt="婚紗照中的陶瓷娃娃">
+            <img class="doll-photo" id="doll-photo-1" src="assets/結婚照牽手.jpeg" alt="牽手照片中的陶瓷娃娃">
+          </div>
+          <div class="doll-frame-crown" aria-hidden="true"></div>
+          <div class="doll-frame-foot" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
+    <button class="doll-photo-hit" id="doll-photo-hit" type="button" aria-label="切換陶瓷娃娃照片" aria-controls="doll-photo-status"></button>
+    <span class="doll-photo-status" id="doll-photo-status" aria-live="polite"></span>
+  </div>
+
+  <!-- ⑥ 心 · 定制器 -->
   <div class="act" id="heart">
     <div class="hit" id="heart-hit"></div>
     <div class="heart-fallback" id="heart-fallback" hidden>
@@ -150,13 +181,13 @@
     </div>
   </div>
 
-  <!-- ⑥ 春天 · 22 朵花 -->
+  <!-- ⑦ 春天 · 22 朵花 -->
   <div class="act" id="spring">
     <div class="garden" id="garden"></div>
     <p class="spring-line" id="spring-line"></p>
   </div>
 
-  <!-- ⑦ 迴響 -->
+  <!-- ⑧ 迴響 -->
   <div class="act" id="echo">
     <div class="anniv ghost" aria-hidden="true"><span class="num">22</span></div>
     <p class="echo-1" id="echo-1"></p>
@@ -173,6 +204,7 @@
 <script src="js/flowers.js"></script>
 <script src="js/figures.js"></script>
 <script src="js/scene3d.js"></script>
+<script src="js/dolls.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

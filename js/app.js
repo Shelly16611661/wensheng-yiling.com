@@ -1,5 +1,5 @@
 /* ============================================================
-   app.js ── 捲動引擎與七幕編排
+   app.js ── 捲動引擎與八幕編排
    整個網站是一條捲動軸:scrollY → t ∈ [0,1] → 每一幕的區間進度 p
    舞台固定滿版,各幕依 p 淡入淡出、縮放、模糊(相機推進的感覺)
    ============================================================ */
@@ -12,12 +12,13 @@
   const lerp = (a, b, t) => a + (b - a) * t;
   const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); };
 
-  /* ── 七幕與捲動長度(vh) ────────────────────── */
+  /* ── 八幕與捲動長度(vh) ────────────────────── */
   const ACTS = [
     { id: 'prologue', el: $('#prologue'), vh: 130, fog: 0 },
     { id: 'threshold', el: $('#threshold'), vh: 150, fog: 0.22 },
     { id: 'book', el: $('#book-act'), vh: 0, fog: 0.34 },
     { id: 'room', el: $('#room'), vh: 230, fog: 0.2 },
+    { id: 'dolls', el: $('#dolls'), vh: 210, fog: 0 },
     { id: 'heart', el: $('#heart'), vh: 250, fog: 0.12 },
     { id: 'spring', el: $('#spring'), vh: 280, fog: 0.05 },
     { id: 'echo', el: $('#echo'), vh: 230, fog: 0 },
@@ -125,6 +126,14 @@
     return op;
   }
 
+  function updateDolls(a, p) {
+    const enter = smooth(0, 0.1, p), exit = 1 - smooth(0.9, 1, p);
+    const op = (p <= 0 || p >= 1) ? 0 : Math.min(enter, exit);
+    setLayer(a, op);
+    DollScene.update(op);
+    return op;
+  }
+
   const heartPanel = $('#heart-panel');
   function updateHeart(a, p) {
     const enter = smooth(0, 0.12, p), exit = 1 - smooth(0.9, 1, p);
@@ -176,15 +185,16 @@
     updateThreshold(A.threshold, P.threshold, now);
     updateBook(A.book, P.book, now);
     const roomOp = updateRoom(A.room, P.room);
+    const dollOp = updateDolls(A.dolls, P.dolls);
     const heartOp = updateHeart(A.heart, P.heart);
     updateSpring(A.spring, P.spring, now);
     updateEcho(A.echo, P.echo);
 
-    // 3D canvas:哪一幕在用
-    const active = roomOp > 0 ? 'room' : heartOp > 0 ? 'heart' : null;
+    // 3D canvas:哪一幕在用;獨立肖像場景不與客廳或心場景共用畫面
+    const active = dollOp > 0 && Scene3D.dolls ? 'dolls' : roomOp > 0 ? 'room' : heartOp > 0 ? 'heart' : null;
     if (Scene3D.ok) {
       if (Scene3D.active !== active) Scene3D.setActive(active);
-      if (active) Scene3D.render(now, { roomP: P.room, heartP: P.heart, roomOpacity: roomOp, heartOpacity: heartOp });
+      if (active) Scene3D.render(now, { roomP: P.room, heartP: P.heart, roomOpacity: roomOp, heartOpacity: heartOp, dollOpacity: dollOp });
     }
     // 霧:記憶的清晰度
     let fog = 0; ACTS.forEach((a) => (fog += (a._op || 0) * a.fog));
@@ -319,6 +329,7 @@
       const on = Sound.toggle();
       e.currentTarget.setAttribute('aria-pressed', on ? 'true' : 'false');
       e.currentTarget.setAttribute('aria-label', on ? '關閉聲音' : '開啟聲音');
+      DollScene.soundChanged(on);
     });
     $('#wax-seal').addEventListener('click', () => { Sound.seal(); scrollToAct('threshold', 0.16, true); });
     $('#ribbon').addEventListener('click', (e) => { e.stopPropagation(); Book.go(1, 'user'); });
@@ -373,12 +384,16 @@
     layout();
     bindUI();
     bindHeartPanel();
+    DollScene.init();
     const hasHeartLink = readHash();
     syncPanel();
 
     // 3D(非同步;失敗就走靜態備援)
-    const useFallback = () => { setupRoomFallback(); $('#heart-fallback').hidden = false; renderHearts(); };
-    Scene3D.init($('#gl')).then((ok) => { if (!ok) useFallback(); else renderHearts(); }).catch(useFallback);
+    const useFallback = () => { setupRoomFallback(); $('#heart-fallback').hidden = false; DollScene.setWebGL(false); renderHearts(); };
+    Scene3D.init($('#gl')).then((ok) => {
+      if (!ok) useFallback();
+      else { DollScene.setWebGL(!!Scene3D.dolls); renderHearts(); }
+    }).catch(useFallback);
 
     // 字體就緒後才開始儀式(最多等 2.5 秒)
     const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();

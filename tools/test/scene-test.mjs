@@ -19,7 +19,7 @@ globalThis.document = sb.document; // Three 的 ImageLoader 會用全域 documen
 new Function('window', fs.readFileSync(path.join(ROOT, 'js/content.js'), 'utf8'))(sb);
 new Function('window', fs.readFileSync(path.join(ROOT, 'js/figures.js'), 'utf8'))(sb);
 let src = fs.readFileSync(path.join(ROOT, 'js/scene3d.js'), 'utf8');
-src = src.replace(/\n  return S;\n\}\)\(\);\s*$/, '\n  S._t = { buildRoom, buildHeartScene, makeHeartGeometry }; return S;\n})();');
+src = src.replace(/\n  return S;\n\}\)\(\);\s*$/, '\n  S._t = { buildRoom, buildDollScene, buildHeartScene, makeHeartGeometry, archFrameGeometry }; return S;\n})();');
 vm.createContext(sb); vm.runInContext(src, sb, { filename: 'scene3d.js' });
 const S = sb.Scene3D;
 S.THREE = THREE; S.env = new THREE.Texture(); S.ok = true; S.canvas = canvasEl();
@@ -31,6 +31,16 @@ const room = t('buildRoom', () => S._t.buildRoom(THREE));
 if (room) {
   S.room = room;
   t('room objects', () => `${room.scene.children.length} children; front=${room.front}; herFeetX=${room.her.feetX.toFixed(2)} himFeetX=${room.him.feetX.toFixed(2)}; faceMid=${room.faceMid.toArray().map((v) => v.toFixed(2))}; her ${room.her.w.toFixed(2)}×${room.her.h.toFixed(2)} him ${room.him.w.toFixed(2)}×${room.him.h.toFixed(2)}`);
+}
+const dolls = t('buildDollScene', () => S._t.buildDollScene(THREE));
+if (dolls) {
+  S.dolls = dolls;
+  t('doll rig separation', () => {
+    if (dolls.stage.parent !== dolls.scene || dolls.portrait.parent !== dolls.scene || dolls.stage === dolls.portrait) throw new Error('rotating stage and portrait must be separate scene groups');
+    if (dolls.orbit.parent !== dolls.stage || dolls.dust.some((p) => p.mote.parent !== dolls.stage)) throw new Error('rings and dust should belong to the rotating stage');
+    if (Math.abs(dolls.photoW / dolls.photoH - 1584 / 2816) > 1e-9) throw new Error('photo aspect ratio changed');
+    return `photo=${dolls.photoW.toFixed(3)}×${dolls.photoH.toFixed(2)}; stage, portrait, ornaments and dust are isolated correctly`;
+  });
 }
 const heart = t('buildHeartScene', () => S._t.buildHeartScene(THREE));
 if (heart) S.heart = heart;
@@ -53,6 +63,16 @@ t('room framing', () => {
 });
 t('setHands', () => { S.setHands(true); for (let i = 0; i < 40; i++) S.render(2000 + i * 16, { roomP: 0.5, roomOpacity: 1 }); return `heartK=${room.heartK.toFixed(2)} herRotZ=${room.her.group.rotation.z.toFixed(3)} himRotZ=${room.him.group.rotation.z.toFixed(3)} heartScale=${room.smallHeart.scale.x.toFixed(2)}`; });
 t('kiss', () => { const ms = S.kiss(); let maxK = 0, maxVis = 0; for (let i = 0; i < 240; i++) { S.render(3000 + i * 16, { roomP: 0.5, roomOpacity: 1 }); maxK = Math.max(maxK, room.kissK); maxVis = Math.max(maxVis, room.puffs.filter((p) => p.mesh.visible).length); } return `ms=${ms} maxKissK=${maxK.toFixed(2)} maxPuffsVisible=${maxVis} kissT(after)=${room.kissT}`; });
+if (dolls) {
+  t('doll photo crossfade and stage rotation', () => {
+    S.setDollPhoto(1); S.setActive('dolls');
+    for (let i = 0; i < 280; i++) S.render(7000 + i * 16, { dollOpacity: 1 });
+    const scale = dolls.portrait.scale;
+    if (dolls.photoIndex !== 1 || dolls.stageAngle <= 0.02 || Math.abs(dolls.portrait.rotation.y) > 1e-6) throw new Error('portrait must stay front-facing while the stage rotates');
+    if (Math.abs(scale.x - scale.y) > 1e-6 || Math.abs(scale.y - scale.z) > 1e-6) throw new Error('portrait must preserve the photo aspect ratio during entrance');
+    return `photoIndex=${dolls.photoIndex}; stageYaw=${dolls.stageAngle.toFixed(3)}; portraitYaw=${dolls.portrait.rotation.y.toFixed(3)}; uniformScale=${scale.x.toFixed(2)}`;
+  });
+}
 t('setHearts single', () => S.setHearts([{ c: 'rose', m: 'ceramic', h: 'none', e: '' }]));
 t('setHearts double + engraving', () => S.setHearts([{ c: 'gold', m: 'metal', h: 'ring', e: '相愛相守' }, { c: 'mist', m: 'glass', h: 'glow', e: '二十二年' }]));
 for (const m of ['ceramic', 'velvet', 'metal', 'glass']) for (const h of ['none', 'ring', 'glow']) t(`cfg ${m}/${h}`, () => S.setHearts([{ c: 'ivory', m, h, e: 'x' }]));

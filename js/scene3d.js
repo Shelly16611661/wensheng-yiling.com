@@ -1,10 +1,10 @@
 /* ============================================================
-   scene3d.js ── 幕④ 陶瓷人偶(呼吸 / 視線跟隨 / 牽手)+ 幕⑤ 3D 心定制器
+   scene3d.js ── 幕④ 客廳人偶 + 幕⑤ 芭蕾舞音樂盒 + 幕⑥ 3D 心定制器
    單一 WebGL canvas,兩個 scene 輪流渲染;霧色 = 頁面底色,場景從霧裡浮出來
    Three.js 先讀本機 vendor/,失敗再退到 CDN(直接雙擊 index.html 也能跑)
    ============================================================ */
 window.Scene3D = (function () {
-  const S = { ok: false, THREE: null, renderer: null, canvas: null, env: null, room: null, heart: null,
+  const S = { ok: false, THREE: null, renderer: null, canvas: null, env: null, room: null, dolls: null, heart: null,
     active: null, pointer: { x: 0, y: 0 }, low: false, _ft: [], reduced: false };
 
   const THREE_URLS = [
@@ -47,6 +47,8 @@ window.Scene3D = (function () {
     try {
       S.env = makeEnvironment(THREE, renderer);
       S.room = buildRoom(THREE);
+      try { S.dolls = buildDollScene(THREE); }
+      catch (e) { console.warn('[Scene3D] doll scene build failed, using CSS fallback', e); S.dolls = null; }
       S.heart = buildHeartScene(THREE);
       S.resize();
     } catch (e) { console.warn('[Scene3D] build failed, using static fallback', e); try { renderer.dispose(); } catch (_) {} return false; }
@@ -59,7 +61,12 @@ window.Scene3D = (function () {
     if (!S.renderer) return;
     const w = innerWidth, h = innerHeight;
     S.renderer.setSize(w, h, false);
-    [S.room, S.heart].forEach((sc) => { if (sc) { sc.camera.aspect = w / h; sc.camera.updateProjectionMatrix(); } });
+    [S.room, S.dolls, S.heart].forEach((sc) => {
+      if (!sc) return;
+      sc.camera.aspect = w / h;
+      if (sc === S.dolls) sc.camera.fov = w / h < 0.72 ? 38 : 34;
+      sc.camera.updateProjectionMatrix();
+    });
   };
 
   /* ── 攝影棚環境(取代 RoomEnvironment,無需 addon) ── */
@@ -188,6 +195,190 @@ window.Scene3D = (function () {
     return { scene, camera, her, him, front: frontKey, smallHeart, puffs, faceMid, hands: false, t: 0, heartK: 0, kissT: -1, kissK: 0, burstDone: false };
   }
 
+  /* ── 獨立場景:芭蕾舞音樂盒 ─────────────────────────────
+     舞台組繞垂直軸慢轉;肖像組獨立在世界座標,永遠正面朝向固定鏡頭。
+     照片以原始長寬比貼在平面上,不受舞台旋轉、光照或色調映射影響。 */
+  function archFrameGeometry(THREE, outerW, outerH, innerW, innerH) {
+    const shape = new THREE.Shape();
+    const outerR = outerW / 2, outerShoulder = outerH - outerR;
+    shape.moveTo(-outerW / 2, 0);
+    shape.lineTo(-outerW / 2, outerShoulder);
+    shape.absarc(0, outerShoulder, outerR, Math.PI, 0, true);
+    shape.lineTo(outerW / 2, 0);
+    shape.closePath();
+
+    const hole = new THREE.Path();
+    const innerR = innerW / 2, innerShoulder = innerH - innerR;
+    hole.moveTo(innerW / 2, 0.06);
+    hole.lineTo(innerW / 2, innerShoulder);
+    hole.absarc(0, innerShoulder, innerR, 0, Math.PI, false);
+    hole.lineTo(-innerW / 2, 0.06);
+    hole.closePath();
+    shape.holes.push(hole);
+    return new THREE.ExtrudeGeometry(shape, {
+      depth: 0.13, bevelEnabled: true, bevelSegments: 3,
+      bevelThickness: 0.025, bevelSize: 0.022, curveSegments: 24,
+    });
+  }
+
+  function radialTexture(THREE, center, edge) {
+    const canvas = document.createElement('canvas'); canvas.width = canvas.height = 256;
+    const c = canvas.getContext('2d');
+    const g = c.createRadialGradient(128, 128, 4, 128, 128, 128);
+    g.addColorStop(0, center); g.addColorStop(1, edge);
+    c.fillStyle = g; c.fillRect(0, 0, 256, 256);
+    const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }
+
+  function buildDollScene(THREE) {
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x100C10);
+    scene.fog = new THREE.FogExp2(0x100C10, 0.026);
+    scene.environment = S.env;
+    const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 50);
+    camera.position.set(0, 1.72, 6.15); camera.lookAt(0, 1.58, 0);
+
+    const target = new THREE.Object3D(); target.position.set(0.16, 1.42, 0);
+    scene.add(target);
+    const spot = new THREE.SpotLight(0xF2D9A6, 34, 12, Math.PI / 7.2, 0.84, 1.65);
+    spot.position.set(0.24, 5.1, 2.5); spot.target = target;
+    spot.castShadow = !S.low; spot.shadow.mapSize.set(1024, 1024); spot.shadow.radius = 7;
+    spot.shadow.bias = -0.0005; scene.add(spot);
+    scene.add(new THREE.HemisphereLight(0xEAD7B4, 0x140E11, 0.62));
+    const fill = new THREE.DirectionalLight(0xD5B77C, 0.52); fill.position.set(-3.5, 2.5, 4); scene.add(fill);
+    const rim = new THREE.DirectionalLight(0xA87C43, 1.05); rim.position.set(0, 3.5, -3); scene.add(rim);
+
+    const warmGlow = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: radialTexture(THREE, 'rgba(212,171,103,.38)', 'rgba(212,171,103,0)'),
+      color: 0xC69A5B, transparent: true, opacity: 0, depthWrite: false,
+      blending: THREE.AdditiveBlending, toneMapped: false,
+    }));
+    warmGlow.position.set(0, 1.72, -1.15); warmGlow.scale.set(4.1, 4.8, 1); scene.add(warmGlow);
+
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshStandardMaterial({ color: 0x140F12, roughness: 0.96, metalness: 0.02 }));
+    ground.rotation.x = -Math.PI / 2; ground.position.y = -0.035; ground.receiveShadow = true; scene.add(ground);
+
+    // 固定的柔和接觸陰影:舞台在其下方轉動,肖像腳座仍穩定落在中央。
+    const shadow = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.82), new THREE.MeshBasicMaterial({
+      map: radialTexture(THREE, 'rgba(0,0,0,.55)', 'rgba(0,0,0,0)'), transparent: true,
+      opacity: 0.48, depthWrite: false, toneMapped: false,
+    }));
+    shadow.rotation.x = -Math.PI / 2; shadow.position.set(0, 0.278, 0.08); scene.add(shadow);
+
+    // 旋轉舞台:暗木底盤、舊黃銅環、放射刻線與低調鉚釘。
+    const stage = new THREE.Group(); scene.add(stage);
+    const stageMaterials = [];
+    const stageMat = (hex, metalness, roughness) => {
+      const m = new THREE.MeshPhysicalMaterial({ color: hex, metalness, roughness, clearcoat: 0.28,
+        transparent: true, opacity: 0, depthWrite: false, envMapIntensity: 0.68 });
+      stageMaterials.push(m); return m;
+    };
+    const woodMat = stageMat(0x2A1B18, 0.12, 0.48);
+    const brassMat = stageMat(0xA88950, 0.82, 0.34);
+    const brightBrassMat = stageMat(0xC7A765, 0.9, 0.28);
+    const platter = new THREE.Mesh(new THREE.CylinderGeometry(1.48, 1.54, 0.22, 96), woodMat);
+    platter.position.y = 0.145; platter.castShadow = true; platter.receiveShadow = true; stage.add(platter);
+    const lowerBand = new THREE.Mesh(new THREE.CylinderGeometry(1.52, 1.54, 0.055, 96), brassMat);
+    lowerBand.position.y = 0.075; lowerBand.castShadow = true; stage.add(lowerBand);
+    const upperBand = new THREE.Mesh(new THREE.TorusGeometry(1.42, 0.024, 10, 120), brightBrassMat);
+    upperBand.rotation.x = Math.PI / 2; upperBand.position.y = 0.256; stage.add(upperBand);
+    const innerBand = new THREE.Mesh(new THREE.TorusGeometry(1.06, 0.012, 8, 112), brassMat);
+    innerBand.rotation.x = Math.PI / 2; innerBand.position.y = 0.264; stage.add(innerBand);
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2;
+      const tick = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.009, i % 2 ? 0.10 : 0.15), i % 2 ? brassMat : brightBrassMat);
+      tick.position.set(Math.sin(a) * 1.23, 0.264, Math.cos(a) * 1.23); tick.rotation.y = a; stage.add(tick);
+    }
+    const studGeo = new THREE.SphereGeometry(0.032, 12, 8);
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      const stud = new THREE.Mesh(studGeo, brightBrassMat);
+      stud.position.set(Math.sin(a) * 1.43, 0.258, Math.cos(a) * 1.43); stud.scale.y = 0.55; stage.add(stud);
+    }
+
+    // 固定肖像組:與旋轉舞台不是同一個群組,因此照片不會偏航或露出背面。
+    const portrait = new THREE.Group(); portrait.position.set(0, 0.34, 0); scene.add(portrait);
+    const portraitMaterials = [];
+    const portraitMat = (hex, metalness = 0.78, roughness = 0.32) => {
+      const m = new THREE.MeshPhysicalMaterial({ color: hex, metalness, roughness, clearcoat: 0.62,
+        clearcoatRoughness: 0.22, transparent: true, opacity: 0, depthWrite: false, envMapIntensity: 0.58 });
+      portraitMaterials.push(m); return m;
+    };
+    const frameMat = portraitMat(0xA88950, 0.82, 0.3);
+    const frameGeo = archFrameGeometry(THREE, 1.74, 2.58, 1.44, 2.40);
+    const frameMesh = new THREE.Mesh(frameGeo, frameMat);
+    frameMesh.position.z = -0.075; frameMesh.castShadow = true; frameMesh.receiveShadow = true; portrait.add(frameMesh);
+
+    // 雙層細金屬線勾出拱形內緣,不進入照片畫面。
+    const innerW = 1.44, innerH = 2.4, innerR = innerW / 2, innerShoulder = innerH - innerR;
+    const archPoints = [new THREE.Vector3(-innerW / 2, 0.075, 0)];
+    archPoints.push(new THREE.Vector3(-innerW / 2, innerShoulder, 0));
+    for (let i = 1; i <= 32; i++) {
+      const a = Math.PI - (Math.PI * i / 32);
+      archPoints.push(new THREE.Vector3(Math.cos(a) * innerR, innerShoulder + Math.sin(a) * innerR, 0));
+    }
+    archPoints.push(new THREE.Vector3(innerW / 2, 0.075, 0));
+    const trimLineMat = new THREE.LineBasicMaterial({ color: 0xD6B978, transparent: true, opacity: 0, depthWrite: false });
+    portraitMaterials.push(trimLineMat);
+    const trimLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(archPoints), trimLineMat);
+    trimLine.position.set(0, 0, 0.065); portrait.add(trimLine);
+
+    // 原比例 1584×2816 的照片平面;原圖本身不受燈光與舞台變形。
+    const photoH = 2.2, photoW = photoH * (1584 / 2816), photoY = 0.12 + photoH / 2;
+    const loader = new THREE.TextureLoader();
+    const photoFiles = ['assets/結婚照.jpeg', 'assets/結婚照牽手.jpeg'];
+    const photoMeshes = photoFiles.map((src, i) => {
+      const texture = loader.load(src);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = S.renderer && S.renderer.capabilities ? Math.min(8, S.renderer.capabilities.getMaxAnisotropy()) : 4;
+      const material = new THREE.MeshBasicMaterial({ map: texture, color: 0xFFFFFF, transparent: true,
+        opacity: 0, depthWrite: false, depthTest: true, side: THREE.DoubleSide, toneMapped: false, fog: false });
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(photoW, photoH), material);
+      mesh.position.set(0, photoY, 0.025 + i * 0.001); mesh.renderOrder = 8 + i; portrait.add(mesh);
+      return mesh;
+    });
+
+    // 小型固定腳座與立柱,中央軸穩定,底盤在它周圍旋轉。
+    const footMat = portraitMat(0x947443, 0.86, 0.3);
+    const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.31, 0.34, 0.075, 48), footMat);
+    foot.position.set(0, 0.018, -0.04); foot.castShadow = true; portrait.add(foot);
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.105, 0.33, 32), footMat);
+    stem.position.set(0, 0.21, -0.10); stem.castShadow = true; portrait.add(stem);
+    const crown = new THREE.Mesh(new THREE.SphereGeometry(0.072, 20, 14), portraitMat(0xC2A365, 0.88, 0.25));
+    crown.position.set(0, 2.62, 0.01); crown.scale.set(1.12, 0.76, 0.72); crown.castShadow = true; portrait.add(crown);
+
+    // 背後的一段薄金環慢轉;不與固定肖像相連,也不穿過照片。
+    const orbit = new THREE.Group(); orbit.position.set(0, 1.67, -0.36); stage.add(orbit);
+    const orbitMat = new THREE.MeshBasicMaterial({ color: 0xA88950, transparent: true, opacity: 0,
+      depthWrite: false, toneMapped: false });
+    const orbitMat2 = new THREE.MeshBasicMaterial({ color: 0xD0B16D, transparent: true, opacity: 0,
+      depthWrite: false, toneMapped: false });
+    const orbitMaterials = [orbitMat, orbitMat2];
+    const arcA = new THREE.Mesh(new THREE.TorusGeometry(1.12, 0.009, 6, 96, Math.PI * 1.48), orbitMat);
+    const arcB = new THREE.Mesh(new THREE.TorusGeometry(1.24, 0.006, 6, 96, Math.PI * 0.92), orbitMat2);
+    arcA.rotation.z = -0.4; arcB.rotation.z = 2.3; orbit.add(arcA, arcB);
+
+    // 少量金色微塵;每粒的亮度依聚光錐距離計算,不閃爍、不進入照片平面。
+    const moteTexture = radialTexture(THREE, 'rgba(255,239,190,1)', 'rgba(215,169,86,0)');
+    const dust = [];
+    for (let i = 0; i < 14; i++) {
+      const side = i % 2 ? 1 : -1;
+      const radius = 0.88 + Math.random() * 0.52;
+      const y = 0.58 + Math.random() * 2.28;
+      const angle = Math.random() * Math.PI * 0.82 - Math.PI * 0.41;
+      const mat = new THREE.SpriteMaterial({ map: moteTexture, color: 0xE8C783, transparent: true,
+        opacity: 0, depthWrite: false, toneMapped: false, blending: THREE.AdditiveBlending });
+      const mote = new THREE.Sprite(mat); mote.position.set(side * radius, y, 0.08 + Math.sin(angle) * 0.32);
+      const size = 0.025 + Math.random() * 0.035; mote.scale.set(size, size, 1); stage.add(mote);
+      dust.push({ mote, side, radius, y, angle, phase: Math.random() * Math.PI * 2 });
+    }
+
+    return { scene, camera, stage, portrait, frameMat, portraitMaterials, orbitMaterials, stageMaterials, photoMeshes,
+      photoIndex: 0, fromPhoto: 0, targetPhoto: 0, fade: 1, spot, warmGlow, orbit, dust, t: 0, stageAngle: 0,
+      stageTopY: 0.264, photoW, photoH, reveal: 0 };
+  }
+
   function makeHeartGeometry(THREE, size = 1, depth = 0.34) {
     const s = new THREE.Shape();
     s.moveTo(0, 0.32);
@@ -217,7 +408,7 @@ window.Scene3D = (function () {
     return g;
   }
 
-  /* ── 幕⑤:心 ─────────────────────────────── */
+  /* ── 幕⑥:心 ─────────────────────────────── */
   const COLORS = { rose: 0xC9202A, ivory: 0xF2F2F2, gold: 0xC9A227, mist: 0xB9BEC2 };
   function heartMaterial(THREE, cfg) {
     const color = COLORS[cfg.c] || COLORS.rose;
@@ -305,6 +496,14 @@ window.Scene3D = (function () {
     });
   };
   S.refreshEngraving = function () { if (S.ok) S.heart.hearts.forEach((o) => { const c = Object.assign({}, o.cfg); o.cfg.e = '\u0000'; applyHeartConfig(S.THREE, S.heart, o, c); }); };
+  S.setDollPhoto = function (index) {
+    if (!S.ok || !S.dolls) return;
+    const D = S.dolls, target = index === 1 ? 1 : 0;
+    if (target === D.targetPhoto && D.fade < 1) return;
+    if (target === D.photoIndex && D.fade >= 1) return;
+    D.fromPhoto = D.fade >= 1 ? D.photoIndex : (D.fade >= 0.5 ? D.targetPhoto : D.photoIndex);
+    D.targetPhoto = target; D.fade = 0;
+  };
 
   /* ── 每幀更新 ─────────────────────────────── */
   S.setActive = function (name) {
@@ -313,7 +512,7 @@ window.Scene3D = (function () {
   };
 
   let lastNow = 0;
-  S.render = function (now, { roomP = 0, heartP = 0, roomOpacity = 0, heartOpacity = 0 } = {}) {
+  S.render = function (now, { roomP = 0, heartP = 0, roomOpacity = 0, heartOpacity = 0, dollOpacity = 0 } = {}) {
     if (!S.ok || !S.active) return;
     const dt = Math.min(0.05, lastNow ? (now - lastNow) / 1000 : 0.016); lastNow = now;
     const THREE = S.THREE, k = 1 - Math.pow(0.92, dt * 60);
@@ -371,6 +570,56 @@ window.Scene3D = (function () {
       });
       S.canvas.style.opacity = roomOpacity;
       S.renderer.render(R.scene, R.camera);
+    } else if (S.active === 'dolls' && S.dolls) {
+      const D = S.dolls; D.t += dt;
+      const lightReveal = smooth(0.02, 1.25, D.t);
+      const frameReveal = smooth(0.72, 2.05, D.t);
+      const stageReveal = smooth(1.05, 2.2, D.t);
+      const spinReveal = smooth(1.9, 3.05, D.t);
+      D.spot.intensity = 34 * lightReveal;
+      D.warmGlow.material.opacity = 0.34 * lightReveal;
+      D.portrait.position.y = 0.34 + (1 - frameReveal) * 0.11;
+      D.portrait.scale.setScalar(0.94 + frameReveal * 0.06);
+      D.portrait.rotation.set(0, 0, 0); // 永遠面向觀眾,不受舞台的轉動影響。
+      D.portraitMaterials.forEach((m) => { m.opacity = frameReveal; });
+      D.orbitMaterials.forEach((m, i) => { m.opacity = stageReveal * (i ? 0.13 : 0.19); });
+      D.stageMaterials.forEach((m) => { m.opacity = stageReveal; });
+      if (!S.reduced) {
+        const secondsPerTurn = innerWidth < 640 ? 88 : 56;
+        D.stageAngle += dt * Math.PI * 2 / secondsPerTurn * spinReveal;
+      }
+      D.stage.rotation.y = D.stageAngle;
+
+      let photoMix = 1;
+      if (D.fade < 1) {
+        D.fade = Math.min(1, D.fade + dt / 1.05);
+        photoMix = smooth(0, 1, D.fade);
+        D.photoMeshes.forEach((mesh, i) => {
+          let a = 0;
+          if (i === D.fromPhoto) a = 1 - photoMix;
+          if (i === D.targetPhoto) a = photoMix;
+          mesh.material.opacity = a * frameReveal;
+        });
+        if (D.fade >= 1) { D.photoIndex = D.targetPhoto; D.fromPhoto = D.targetPhoto; }
+      } else {
+        D.photoMeshes.forEach((mesh, i) => { mesh.material.opacity = i === D.targetPhoto ? frameReveal : 0; });
+      }
+
+      const dustReveal = smooth(0.55, 1.75, D.t);
+      D.dust.forEach((p) => {
+        p.mote.position.y = p.y + Math.sin(D.t * 0.24 + p.phase) * 0.035;
+        const ca = Math.cos(D.stageAngle), sa = Math.sin(D.stageAngle);
+        const wx = p.mote.position.x * ca + p.mote.position.z * sa;
+        const wz = -p.mote.position.x * sa + p.mote.position.z * ca;
+        const along = clamp((p.mote.position.y - 1.42) / (5.1 - 1.42), 0, 1);
+        const beamX = 0.16 + (0.24 - 0.16) * along, beamZ = 2.5 * along;
+        const radial = Math.hypot(wx - beamX, wz - beamZ);
+        const beamRadius = Math.max(0.16, (5.1 - p.mote.position.y) * Math.tan(Math.PI / 7.2) * 0.68);
+        const lit = 1 - smooth(beamRadius * 0.48, beamRadius, radial);
+        p.mote.material.opacity = 0.28 * dustReveal * lit;
+      });
+      S.canvas.style.opacity = dollOpacity;
+      S.renderer.render(D.scene, D.camera);
     } else if (S.active === 'heart') {
       const H = S.heart; H.t += dt;
       const appear = smooth(0.04, 0.32, heartP);
